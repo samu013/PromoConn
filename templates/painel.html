@@ -1,0 +1,2075 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        PromoConn - Central de Promoções
+    </title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        :root {
+            --azul-escuro: #071d49;
+            --azul: #075cca;
+            --azul-claro: #0d9cff;
+            --ciano: #19c8ff;
+
+            --amarelo: #ffe600;
+
+            --preto: #101828;
+
+            --cinza-texto: #667085;
+            --cinza-claro: #f4f7fb;
+
+            --borda: #e5eaf2;
+
+            --verde: #00a650;
+
+            --branco: #ffffff;
+
+            --telegram: #229ed9;
+        }
+
+
+        body {
+            margin: 0;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background:
+                #f4f7fb;
+
+            color:
+                var(--preto);
+        }
+
+
+        /* ================================================= */
+        /* TOPO                                             */
+        /* ================================================= */
+
+        .topo {
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--azul-escuro),
+                    var(--azul)
+                );
+
+            color: white;
+
+            border-bottom:
+                5px solid
+                var(--amarelo);
+        }
+
+
+        .topo-conteudo {
+            max-width: 1450px;
+
+            margin: auto;
+
+            padding:
+                20px 25px;
+
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            align-items: center;
+
+            gap: 30px;
+        }
+
+
+        .marca {
+            display: flex;
+
+            align-items: center;
+
+            gap: 14px;
+        }
+
+
+        .robo-logo {
+            width: 55px;
+            height: 55px;
+
+            border:
+                3px solid
+                var(--ciano);
+
+            border-radius: 18px;
+
+            background:
+                var(--preto);
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-size: 27px;
+
+            box-shadow:
+                0 0 15px
+                rgba(
+                    25,
+                    200,
+                    255,
+                    0.35
+                );
+        }
+
+
+        .marca-texto h1 {
+            margin: 0;
+
+            font-family:
+                "Courier New",
+                monospace;
+
+            letter-spacing:
+                2px;
+
+            font-size: 27px;
+        }
+
+
+        .marca-texto strong {
+            color:
+                var(--ciano);
+        }
+
+
+        .marca-texto p {
+            margin:
+                3px 0 0;
+
+            color:
+                var(--amarelo);
+
+            font-size: 12px;
+
+            letter-spacing:
+                2px;
+        }
+
+
+        .status-sistema {
+            display: flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.1
+                );
+
+            padding:
+                9px 14px;
+
+            border-radius: 50px;
+
+            font-size: 13px;
+        }
+
+
+        .status-online {
+            width: 9px;
+            height: 9px;
+
+            border-radius: 50%;
+
+            background:
+                #38e079;
+
+            box-shadow:
+                0 0 8px
+                #38e079;
+        }
+
+
+        /* ================================================= */
+        /* CONTEÚDO                                         */
+        /* ================================================= */
+
+        main {
+            max-width: 1450px;
+
+            margin:
+                28px auto;
+
+            padding:
+                0 22px 60px;
+        }
+
+
+        .titulo-pagina {
+            margin-bottom: 20px;
+        }
+
+
+        .titulo-pagina h2 {
+            margin: 0;
+
+            font-size: 24px;
+        }
+
+
+        .titulo-pagina p {
+            margin:
+                5px 0 0;
+
+            color:
+                var(--cinza-texto);
+        }
+
+
+        /* ================================================= */
+        /* MÉTRICAS                                         */
+        /* ================================================= */
+
+        .metricas {
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    minmax(0, 1fr)
+                );
+
+            gap: 15px;
+
+            margin-bottom: 26px;
+        }
+
+
+        .metrica {
+            position: relative;
+
+            overflow: hidden;
+
+            background:
+                white;
+
+            border:
+                1px solid
+                var(--borda);
+
+            border-radius: 15px;
+
+            padding: 20px;
+
+            box-shadow:
+                0 4px 18px
+                rgba(
+                    7,
+                    29,
+                    73,
+                    0.05
+                );
+        }
+
+
+        .metrica::before {
+            content: "";
+
+            position: absolute;
+
+            left: 0;
+            top: 0;
+            bottom: 0;
+
+            width: 5px;
+
+            background:
+                var(--azul-claro);
+        }
+
+
+        .metrica:nth-child(2)::before {
+            background:
+                var(--amarelo);
+        }
+
+
+        .metrica:nth-child(3)::before {
+            background:
+                var(--verde);
+        }
+
+
+        .metrica:nth-child(4)::before {
+            background:
+                var(--ciano);
+        }
+
+
+        .metrica-icone {
+            font-size: 23px;
+
+            margin-bottom: 8px;
+        }
+
+
+        .metrica-label {
+            display: block;
+
+            color:
+                var(--cinza-texto);
+
+            font-size: 13px;
+        }
+
+
+        .metrica-valor {
+            display: block;
+
+            margin-top: 4px;
+
+            font-size: 30px;
+
+            font-weight: bold;
+
+            color:
+                var(--azul-escuro);
+        }
+
+
+        /* ================================================= */
+        /* FILA                                             */
+        /* ================================================= */
+
+        .fila {
+            margin-bottom: 35px;
+
+            border-radius: 18px;
+
+            padding: 22px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #071d49,
+                    #073d82
+                );
+
+            color: white;
+
+            box-shadow:
+                0 10px 30px
+                rgba(
+                    7,
+                    29,
+                    73,
+                    0.18
+                );
+        }
+
+
+        .fila-cabecalho {
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            align-items: center;
+
+            gap: 15px;
+
+            margin-bottom: 18px;
+        }
+
+
+        .fila-cabecalho h2 {
+            margin: 0;
+
+            font-size: 22px;
+        }
+
+
+        .fila-cabecalho p {
+            margin:
+                5px 0 0;
+
+            color:
+                #cbdaf0;
+
+            font-size: 13px;
+        }
+
+
+        .fila-contador {
+            background:
+                var(--amarelo);
+
+            color:
+                var(--azul-escuro);
+
+            padding:
+                8px 13px;
+
+            border-radius: 30px;
+
+            font-weight: bold;
+
+            white-space: nowrap;
+        }
+
+
+        .fila-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    auto-fill,
+                    minmax(
+                        290px,
+                        1fr
+                    )
+                );
+
+            gap: 15px;
+        }
+
+
+        .fila-card {
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.09
+                );
+
+            border:
+                1px solid
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.14
+                );
+
+            border-radius: 14px;
+
+            padding: 16px;
+        }
+
+
+        .fila-posicao {
+            display: inline-block;
+
+            color:
+                var(--amarelo);
+
+            font-size: 12px;
+
+            font-weight: bold;
+
+            margin-bottom: 8px;
+        }
+
+
+        .fila-card h3 {
+            margin:
+                0 0 10px;
+
+            font-size: 15px;
+
+            line-height: 1.4;
+        }
+
+
+        .fila-info {
+            font-size: 12px;
+
+            color:
+                #d4e0f3;
+        }
+
+
+        .fila-preco-antigo {
+            margin-top: 13px;
+
+            color:
+                #b6c5dc;
+
+            font-size: 12px;
+
+            text-decoration:
+                line-through;
+        }
+
+
+        .fila-preco {
+            margin-top: 3px;
+
+            color:
+                white;
+
+            font-size: 24px;
+
+            font-weight: bold;
+        }
+
+
+        .fila-desconto {
+            display: inline-block;
+
+            margin-top: 5px;
+
+            color:
+                #61e99c;
+
+            font-weight: bold;
+
+            font-size: 13px;
+        }
+
+
+        /* ================================================= */
+        /* FILTROS                                          */
+        /* ================================================= */
+
+        .painel-filtros {
+            background:
+                white;
+
+            border:
+                1px solid
+                var(--borda);
+
+            border-radius: 15px;
+
+            padding: 18px;
+
+            margin-bottom: 25px;
+        }
+
+
+        .filtro-titulo {
+            margin-bottom: 14px;
+
+            font-weight: bold;
+
+            color:
+                var(--azul-escuro);
+        }
+
+
+        .filtros-grid {
+            display: grid;
+
+            grid-template-columns:
+                2fr 1fr 1fr auto;
+
+            gap: 10px;
+
+            align-items: end;
+        }
+
+
+        .campo label {
+            display: block;
+
+            margin-bottom: 6px;
+
+            color:
+                var(--cinza-texto);
+
+            font-size: 12px;
+
+            font-weight: bold;
+        }
+
+
+        .campo input,
+        .campo select {
+            width: 100%;
+
+            padding:
+                11px 12px;
+
+            border:
+                1px solid
+                #ccd5e3;
+
+            border-radius: 9px;
+
+            background:
+                white;
+
+            font-size: 14px;
+
+            outline: none;
+        }
+
+
+        .campo input:focus,
+        .campo select:focus {
+            border-color:
+                var(--azul-claro);
+
+            box-shadow:
+                0 0 0 3px
+                rgba(
+                    13,
+                    156,
+                    255,
+                    0.12
+                );
+        }
+
+
+        /* ================================================= */
+        /* BOTÕES                                           */
+        /* ================================================= */
+
+        button,
+        .botao {
+            border: none;
+
+            border-radius: 9px;
+
+            padding:
+                11px 16px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            font-size: 14px;
+
+            text-align: center;
+
+            text-decoration: none;
+
+            transition: 0.2s;
+        }
+
+
+        button:hover,
+        .botao:hover {
+            transform:
+                translateY(-1px);
+        }
+
+
+        .botao-filtrar {
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--azul),
+                    var(--azul-claro)
+                );
+
+            color: white;
+        }
+
+
+        .limpar {
+            display: inline-block;
+
+            margin-top: 12px;
+
+            color:
+                var(--azul);
+
+            text-decoration: none;
+
+            font-size: 13px;
+        }
+
+
+        .botao-produto {
+            display: block;
+
+            width: 100%;
+
+            margin-top: 14px;
+
+            background:
+                #edf5ff;
+
+            color:
+                var(--azul);
+        }
+
+
+        .botao-salvar {
+            width: 100%;
+
+            margin-top: 12px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--azul),
+                    var(--azul-claro)
+                );
+
+            color: white;
+        }
+
+
+        .botao-telegram {
+            width: 100%;
+
+            margin-top: 14px;
+
+            background:
+                var(--telegram);
+
+            color: white;
+        }
+
+
+        .fila .botao-telegram {
+            background:
+                linear-gradient(
+                    135deg,
+                    #229ed9,
+                    #19c8ff
+                );
+
+            box-shadow:
+                0 5px 15px
+                rgba(
+                    34,
+                    158,
+                    217,
+                    0.25
+                );
+        }
+
+
+        /* ================================================= */
+        /* RESULTADOS                                        */
+        /* ================================================= */
+
+        .resultado-cabecalho {
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            align-items: center;
+
+            margin-bottom: 17px;
+        }
+
+
+        .resultado-cabecalho h2 {
+            margin: 0;
+
+            color:
+                var(--azul-escuro);
+        }
+
+
+        .resultado-cabecalho span {
+            color:
+                var(--cinza-texto);
+
+            font-size: 14px;
+        }
+
+
+        /* ================================================= */
+        /* CARDS                                            */
+        /* ================================================= */
+
+        .produtos-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    auto-fill,
+                    minmax(
+                        310px,
+                        1fr
+                    )
+                );
+
+            gap: 20px;
+        }
+
+
+        .produto {
+            background:
+                white;
+
+            border:
+                1px solid
+                var(--borda);
+
+            border-radius: 16px;
+
+            overflow: hidden;
+
+            box-shadow:
+                0 5px 20px
+                rgba(
+                    7,
+                    29,
+                    73,
+                    0.06
+                );
+        }
+
+
+        .imagem-box {
+            height: 245px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 18px;
+
+            background:
+                linear-gradient(
+                    180deg,
+                    #ffffff,
+                    #f8fbff
+                );
+
+            border-bottom:
+                1px solid
+                var(--borda);
+        }
+
+
+        .imagem-box img {
+            width: 100%;
+            height: 100%;
+
+            object-fit: contain;
+        }
+
+
+        .produto-conteudo {
+            padding: 18px;
+        }
+
+
+        .badges {
+            display: flex;
+
+            flex-wrap: wrap;
+
+            gap: 6px;
+
+            margin-bottom: 12px;
+        }
+
+
+        .badge {
+            padding:
+                6px 10px;
+
+            border-radius: 30px;
+
+            font-size: 12px;
+
+            font-weight: bold;
+        }
+
+
+        .badge-score {
+            background:
+                #e8f3ff;
+
+            color:
+                var(--azul);
+        }
+
+
+        .badge-ranking {
+            background:
+                #fff7cc;
+
+            color:
+                #957500;
+        }
+
+
+        .produto h3 {
+            margin:
+                0 0 9px;
+
+            font-size: 17px;
+
+            line-height: 1.4;
+        }
+
+
+        .categoria {
+            color:
+                var(--cinza-texto);
+
+            font-size: 13px;
+
+            margin-bottom: 13px;
+        }
+
+
+        .tendencias {
+            margin-top: 14px;
+
+            padding: 11px;
+
+            border-radius: 9px;
+
+            background:
+                #f5f9ff;
+
+            font-size: 12px;
+        }
+
+
+        .tendencias strong {
+            color:
+                var(--azul-escuro);
+        }
+
+
+        .tendencia {
+            color:
+                #16803c;
+
+            margin-top: 4px;
+        }
+
+
+        /* ================================================= */
+        /* FORM OFERTA                                      */
+        /* ================================================= */
+
+        .form-oferta {
+            margin-top: 15px;
+
+            padding-top: 13px;
+
+            border-top:
+                1px solid
+                var(--borda);
+        }
+
+
+        .form-oferta label {
+            display: block;
+
+            margin:
+                9px 0 5px;
+
+            color:
+                var(--cinza-texto);
+
+            font-size: 12px;
+
+            font-weight: bold;
+        }
+
+
+        .form-oferta input {
+            width: 100%;
+
+            padding:
+                10px 11px;
+
+            border:
+                1px solid
+                #ccd5e3;
+
+            border-radius: 8px;
+
+            outline: none;
+        }
+
+
+        .form-oferta input:focus {
+            border-color:
+                var(--azul-claro);
+        }
+
+
+        /* ================================================= */
+        /* PAGINAÇÃO                                        */
+        /* ================================================= */
+
+        .paginacao {
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            gap: 15px;
+
+            margin-top: 32px;
+        }
+
+
+        .pagina-botao {
+            padding:
+                10px 15px;
+
+            border:
+                1px solid
+                var(--borda);
+
+            border-radius: 8px;
+
+            background:
+                white;
+
+            color:
+                var(--azul);
+
+            text-decoration: none;
+
+            font-weight: bold;
+        }
+
+
+        .pagina-info {
+            color:
+                var(--cinza-texto);
+
+            font-size: 14px;
+        }
+
+
+        footer {
+            border-top:
+                1px solid
+                var(--borda);
+
+            text-align: center;
+
+            padding: 25px;
+
+            color:
+                var(--cinza-texto);
+
+            font-size: 12px;
+        }
+
+
+        footer strong {
+            color:
+                var(--azul);
+        }
+
+
+        /* ================================================= */
+        /* RESPONSIVO                                       */
+        /* ================================================= */
+
+        @media (
+            max-width: 900px
+        ) {
+
+            .metricas {
+                grid-template-columns:
+                    repeat(
+                        2,
+                        1fr
+                    );
+            }
+
+
+            .filtros-grid {
+                grid-template-columns:
+                    1fr 1fr;
+            }
+
+
+            .status-sistema {
+                display: none;
+            }
+        }
+
+
+        @media (
+            max-width: 600px
+        ) {
+
+            .topo-conteudo {
+                padding: 16px;
+            }
+
+
+            .marca-texto h1 {
+                font-size: 21px;
+            }
+
+
+            main {
+                padding:
+                    0 12px 40px;
+            }
+
+
+            .metricas {
+                grid-template-columns:
+                    1fr 1fr;
+            }
+
+
+            .filtros-grid {
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .fila-cabecalho,
+            .resultado-cabecalho {
+                flex-direction:
+                    column;
+
+                align-items:
+                    flex-start;
+            }
+
+
+            .produtos-grid,
+            .fila-grid {
+                grid-template-columns:
+                    1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header class="topo">
+
+    <div class="topo-conteudo">
+
+        <div class="marca">
+
+            <div class="robo-logo">
+                🤖
+            </div>
+
+            <div class="marca-texto">
+
+                <h1>
+                    PROMO<strong>CONN</strong>
+                </h1>
+
+                <p>
+                    CENTRAL DE PROMOÇÕES
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="status-sistema">
+
+            <span class="status-online"></span>
+
+            Sistema online
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<main>
+
+
+    <div class="titulo-pagina">
+
+        <h2>
+            👋 Central de oportunidades
+        </h2>
+
+        <p>
+            Encontre, prepare e publique
+            promoções no Telegram.
+        </p>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- MÉTRICAS                                          -->
+    <!-- ================================================= -->
+
+    <section class="metricas">
+
+
+        <div class="metrica">
+
+            <div class="metrica-icone">
+                🔥
+            </div>
+
+            <span class="metrica-label">
+                Oportunidades
+            </span>
+
+            <span class="metrica-valor">
+                {{ total_oportunidades }}
+            </span>
+
+        </div>
+
+
+        <div class="metrica">
+
+            <div class="metrica-icone">
+                ⏳
+            </div>
+
+            <span class="metrica-label">
+                Aguardando preparação
+            </span>
+
+            <span class="metrica-valor">
+                {{ total_aguardando }}
+            </span>
+
+        </div>
+
+
+        <div class="metrica">
+
+            <div class="metrica-icone">
+                🚀
+            </div>
+
+            <span class="metrica-label">
+                Na fila
+            </span>
+
+            <span class="metrica-valor">
+                {{ total_prontos }}
+            </span>
+
+        </div>
+
+
+        <div class="metrica">
+
+            <div class="metrica-icone">
+                ✅
+            </div>
+
+            <span class="metrica-label">
+                Publicadas
+            </span>
+
+            <span class="metrica-valor">
+                {{ total_publicados }}
+            </span>
+
+        </div>
+
+
+    </section>
+
+
+    <!-- ================================================= -->
+    <!-- FILA DE PUBLICAÇÃO                                -->
+    <!-- ================================================= -->
+
+    {% if fila_publicacao %}
+
+        <section class="fila">
+
+            <div class="fila-cabecalho">
+
+                <div>
+
+                    <h2>
+                        🚀 Fila de publicação
+                    </h2>
+
+                    <p>
+                        Promoções já preparadas.
+                        A maior pontuação aparece primeiro.
+                    </p>
+
+                </div>
+
+
+                <div class="fila-contador">
+
+                    {{ fila_publicacao|length }}
+                    na fila
+
+                </div>
+
+            </div>
+
+
+            <div class="fila-grid">
+
+
+                {% for produto in fila_publicacao %}
+
+
+                    <article class="fila-card">
+
+
+                        <div class="fila-posicao">
+
+                            FILA #{{ loop.index }}
+
+                            ·
+
+                            🔥 {{ produto.pontuacao }} pts
+
+                        </div>
+
+
+                        <h3>
+
+                            {{ produto.nome }}
+
+                        </h3>
+
+
+                        <div class="fila-info">
+
+                            {{ produto.categoria or "Sem categoria" }}
+
+                            ·
+
+                            Ranking
+                            #{{ produto.ranking or "-" }}
+
+                        </div>
+
+
+                        {% if
+                            produto.preco_original
+                            and
+                            produto.preco_original
+                            > produto.preco
+                        %}
+
+                            <div class="fila-preco-antigo">
+
+                                De R$
+
+                                {{
+                                    "%.2f"
+                                    |format(
+                                        produto.preco_original
+                                    )
+                                    |replace(".", ",")
+                                }}
+
+                            </div>
+
+                        {% endif %}
+
+
+                        <div class="fila-preco">
+
+                            R$
+
+                            {{
+                                "%.2f"
+                                |format(
+                                    produto.preco
+                                )
+                                |replace(".", ",")
+                            }}
+
+                        </div>
+
+
+                        {% if produto.desconto %}
+
+                            <div class="fila-desconto">
+
+                                ↓
+
+                                {{
+                                    "%.0f"
+                                    |format(
+                                        produto.desconto
+                                    )
+                                }}
+
+                                % OFF
+
+                            </div>
+
+                        {% endif %}
+
+
+                        {% if produto.link_produto %}
+
+                            <a
+                                href="{{ produto.link_produto }}"
+
+                                target="_blank"
+
+                                rel="noopener noreferrer"
+
+                                class="
+                                    botao
+                                    botao-produto
+                                "
+                            >
+
+                                🛒 Conferir produto
+
+                            </a>
+
+                        {% endif %}
+
+
+                        <form
+                            method="POST"
+
+                            action="{{
+                                url_for(
+                                    'publicar_telegram',
+                                    oportunidade_id=
+                                        produto.id
+                                )
+                            }}"
+                        >
+
+                            <button
+                                type="submit"
+
+                                class="botao-telegram"
+                            >
+
+                                🚀 Publicar agora
+
+                            </button>
+
+                        </form>
+
+
+                    </article>
+
+
+                {% endfor %}
+
+
+            </div>
+
+        </section>
+
+
+    {% endif %}
+
+
+    <!-- ================================================= -->
+    <!-- FILTROS                                           -->
+    <!-- ================================================= -->
+
+    <section class="painel-filtros">
+
+        <div class="filtro-titulo">
+
+            🔎 Encontrar oportunidades
+
+        </div>
+
+
+        <form
+            method="GET"
+
+            action="{{ url_for('painel') }}"
+        >
+
+            <div class="filtros-grid">
+
+
+                <div class="campo">
+
+                    <label>
+                        Produto
+                    </label>
+
+                    <input
+                        type="text"
+
+                        name="busca"
+
+                        value="{{ busca }}"
+
+                        placeholder="
+Samsung, notebook, creatina...
+                        "
+                    >
+
+                </div>
+
+
+                <div class="campo">
+
+                    <label>
+                        Categoria
+                    </label>
+
+                    <select name="categoria">
+
+                        <option value="">
+                            Todas
+                        </option>
+
+
+                        {% for categoria
+                            in categorias
+                        %}
+
+                            <option
+                                value="{{ categoria }}"
+
+                                {% if
+                                    categoria
+                                    ==
+                                    categoria_selecionada
+                                %}
+
+                                    selected
+
+                                {% endif %}
+                            >
+
+                                {{ categoria }}
+
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <div class="campo">
+
+                    <label>
+                        Ordenação
+                    </label>
+
+                    <select name="ordem">
+
+                        <option
+                            value="score"
+
+                            {% if
+                                ordem_selecionada
+                                == "score"
+                            %}
+
+                                selected
+
+                            {% endif %}
+                        >
+
+                            Maior score
+
+                        </option>
+
+
+                        <option
+                            value="ranking"
+
+                            {% if
+                                ordem_selecionada
+                                == "ranking"
+                            %}
+
+                                selected
+
+                            {% endif %}
+                        >
+
+                            Melhor ranking
+
+                        </option>
+
+
+                        <option
+                            value="nome"
+
+                            {% if
+                                ordem_selecionada
+                                == "nome"
+                            %}
+
+                                selected
+
+                            {% endif %}
+                        >
+
+                            Nome A-Z
+
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <button
+                    type="submit"
+
+                    class="botao-filtrar"
+                >
+
+                    🔎 Filtrar
+
+                </button>
+
+
+            </div>
+
+        </form>
+
+
+        <a
+            href="{{ url_for('painel') }}"
+
+            class="limpar"
+        >
+
+            ✕ Limpar filtros
+
+        </a>
+
+    </section>
+
+
+    <!-- ================================================= -->
+    <!-- OPORTUNIDADES                                     -->
+    <!-- ================================================= -->
+
+    <div class="resultado-cabecalho">
+
+        <div>
+
+            <h2>
+                ⚡ Oportunidades
+            </h2>
+
+        </div>
+
+        <span>
+
+            {{ total_filtrado }}
+            resultado(s)
+
+        </span>
+
+    </div>
+
+
+    <section class="produtos-grid">
+
+
+        {% for produto in produtos %}
+
+
+            <article class="produto">
+
+
+                <div class="imagem-box">
+
+
+                    {% if produto.imagem %}
+
+                        <img
+                            src="{{ produto.imagem }}"
+
+                            alt="{{ produto.nome }}"
+                        >
+
+                    {% else %}
+
+                        📦 Sem imagem
+
+                    {% endif %}
+
+
+                </div>
+
+
+                <div class="produto-conteudo">
+
+
+                    <div class="badges">
+
+                        <span
+                            class="
+                                badge
+                                badge-score
+                            "
+                        >
+
+                            🔥
+                            {{ produto.pontuacao }}
+
+                        </span>
+
+
+                        <span
+                            class="
+                                badge
+                                badge-ranking
+                            "
+                        >
+
+                            🏆
+                            #{{ produto.ranking or "-" }}
+
+                        </span>
+
+                    </div>
+
+
+                    <h3>
+
+                        {{ produto.nome }}
+
+                    </h3>
+
+
+                    <div class="categoria">
+
+                        {{
+                            produto.categoria
+                            or
+                            "Sem categoria"
+                        }}
+
+                        ·
+
+                        {{ produto.tipo }}
+
+                    </div>
+
+
+                    {% if produto.tendencias %}
+
+                        <div class="tendencias">
+
+                            <strong>
+                                📈 Em alta
+                            </strong>
+
+
+                            {% for tendencia
+                                in produto.tendencias
+                            %}
+
+                                <div class="tendencia">
+
+                                    #{{ tendencia.posicao }}
+
+                                    {{ tendencia.palavra }}
+
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    {% endif %}
+
+
+                    {% if produto.link_produto %}
+
+                        <a
+                            href="{{ produto.link_produto }}"
+
+                            target="_blank"
+
+                            rel="noopener noreferrer"
+
+                            class="
+                                botao
+                                botao-produto
+                            "
+                        >
+
+                            🛒 Abrir no Mercado Livre
+
+                        </a>
+
+                    {% endif %}
+
+
+                    {% if produto.link_produto %}
+
+                        <form
+                            class="form-oferta"
+
+                            method="POST"
+
+                            action="{{
+                                url_for(
+                                    'salvar_oferta',
+                                    oportunidade_id=
+                                        produto.id
+                                )
+                            }}"
+                        >
+
+
+                            <input
+                                type="hidden"
+
+                                name="link_produto"
+
+                                value="{{
+                                    produto.link_produto
+                                }}"
+                            >
+
+
+                            <label>
+
+                                💰 Preço atual
+
+                            </label>
+
+
+                            <input
+                                type="text"
+
+                                name="preco"
+
+                                placeholder="69,90"
+
+                                required
+                            >
+
+
+                            <label>
+
+                                Preço anterior
+                                (opcional)
+
+                            </label>
+
+
+                            <input
+                                type="text"
+
+                                name="preco_original"
+
+                                placeholder="159,90"
+                            >
+
+
+                            <label>
+
+                                🔗 Link de afiliado
+
+                            </label>
+
+
+                            <input
+                                type="url"
+
+                                name="link_afiliado"
+
+                                placeholder="
+https://meli.la/...
+                                "
+
+                                required
+                            >
+
+
+                            <button
+                                type="submit"
+
+                                class="botao-salvar"
+                            >
+
+                                ⚡ Adicionar à fila
+
+                            </button>
+
+
+                        </form>
+
+                    {% endif %}
+
+
+                </div>
+
+
+            </article>
+
+
+        {% else %}
+
+
+            <p>
+
+                Nenhuma oportunidade encontrada.
+
+            </p>
+
+
+        {% endfor %}
+
+
+    </section>
+
+
+    <!-- ================================================= -->
+    <!-- PAGINAÇÃO                                         -->
+    <!-- ================================================= -->
+
+    {% if total_paginas > 1 %}
+
+
+        <nav class="paginacao">
+
+
+            {% if pagina > 1 %}
+
+                <a
+                    class="pagina-botao"
+
+                    href="{{
+                        url_for(
+                            'painel',
+
+                            pagina=
+                                pagina - 1,
+
+                            busca=
+                                busca,
+
+                            categoria=
+                                categoria_selecionada,
+
+                            ordem=
+                                ordem_selecionada
+                        )
+                    }}"
+                >
+
+                    ← Anterior
+
+                </a>
+
+            {% endif %}
+
+
+            <span class="pagina-info">
+
+                Página
+                {{ pagina }}
+
+                de
+
+                {{ total_paginas }}
+
+            </span>
+
+
+            {% if
+                pagina
+                < total_paginas
+            %}
+
+                <a
+                    class="pagina-botao"
+
+                    href="{{
+                        url_for(
+                            'painel',
+
+                            pagina=
+                                pagina + 1,
+
+                            busca=
+                                busca,
+
+                            categoria=
+                                categoria_selecionada,
+
+                            ordem=
+                                ordem_selecionada
+                        )
+                    }}"
+                >
+
+                    Próxima →
+
+                </a>
+
+            {% endif %}
+
+
+        </nav>
+
+
+    {% endif %}
+
+
+</main>
+
+
+<footer>
+
+    <strong>
+        PROMOCONN
+    </strong>
+
+    · Central de Promoções
+
+</footer>
+
+
+</body>
+
+</html>

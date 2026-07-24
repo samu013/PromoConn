@@ -1,0 +1,28 @@
+# Sessões/perfil do navegador
+sessions/
+profile/
+
+# Ambiente
+.env
+venv/
+.venv/
+
+# Tokens
+tokens.json
+data/tokens.json
+
+# Bancos locais
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# Debug
+debug_mercadolivre.html
+
+# IDE
+.vscode/
+.idea/
