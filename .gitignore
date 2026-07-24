@@ -26,3 +26,7 @@ debug_mercadolivre.html
 # IDE
 .vscode/
 .idea/
+
+#utils
+.cadastrar_grupos_telegram.py
+.listar_grupos_telegram.py

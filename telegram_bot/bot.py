@@ -11,34 +11,45 @@ TELEGRAM_TOKEN = os.getenv(
     "TELEGRAM_TOKEN"
 )
 
+# Mantemos o chat antigo apenas como fallback.
 TELEGRAM_CHAT_ID = os.getenv(
     "TELEGRAM_CHAT_ID"
 )
 
 
-def formatar_reais(valor):
+if not TELEGRAM_TOKEN:
+    raise RuntimeError(
+        "TELEGRAM_TOKEN não encontrado."
+    )
+
+
+# =========================================================
+# FORMATAÇÃO
+# =========================================================
+
+def formatar_preco(valor):
     if valor is None:
         return None
 
-    texto = (
-        f"{valor:,.2f}"
+    return (
+        f"{float(valor):,.2f}"
         .replace(",", "X")
         .replace(".", ",")
         .replace("X", ".")
     )
 
-    return f"R$ {texto}"
 
+def montar_mensagem(
+    produto
+):
+    nome = produto.get(
+        "nome",
+        "Oferta"
+    )
 
-def montar_mensagem(produto):
-    linhas = [
-        "🔥 OFERTA NO MERCADO LIVRE",
-        "",
-        f"🛍️ {produto['nome']}",
-        "",
-    ]
-
-    preco = produto.get("preco")
+    preco = produto.get(
+        "preco"
+    )
 
     preco_original = produto.get(
         "preco_original"
@@ -48,139 +59,160 @@ def montar_mensagem(produto):
         "desconto"
     )
 
+    link_afiliado = produto.get(
+        "link_afiliado"
+    )
+
+    categoria = produto.get(
+        "categoria"
+    )
+
+    linhas = []
+
+    # =====================================================
+    # CABEÇALHO
+    # =====================================================
+
+    linhas.append(
+        "🔥 <b>OFERTA PROMOCONN</b>"
+    )
+
+    linhas.append("")
+
+    linhas.append(
+        f"<b>{nome}</b>"
+    )
+
+    # =====================================================
+    # CATEGORIA
+    # =====================================================
+
+    if categoria:
+        linhas.append("")
+
+        linhas.append(
+            f"📦 {categoria}"
+        )
+
+    # =====================================================
+    # PREÇOS
+    # =====================================================
+
+    linhas.append("")
+
     if (
-        preco_original
+        preco_original is not None
+        and preco is not None
         and preco_original > preco
     ):
         linhas.append(
             "❌ De: "
-            + formatar_reais(
-                preco_original
-            )
+            f"<s>R$ "
+            f"{formatar_preco(preco_original)}"
+            f"</s>"
         )
 
     if preco is not None:
         linhas.append(
-            "🔥 Por: "
-            + formatar_reais(preco)
+            "💰 <b>Por: R$ "
+            f"{formatar_preco(preco)}"
+            "</b>"
         )
 
     if desconto:
         linhas.append(
-            f"💰 {desconto:.0f}% OFF"
+            f"📉 <b>{desconto:.0f}% OFF</b>"
         )
 
-    linhas.extend(
-        [
-            "",
-            "🛒 Clique no botão abaixo "
-            "para conferir a oferta.",
-            "",
-            "⚠️ Preço e disponibilidade "
-            "podem mudar.",
-        ]
+    # =====================================================
+    # LINK
+    # =====================================================
+
+    if link_afiliado:
+        linhas.append("")
+        linhas.append(
+            "🛒 <b>Comprar agora:</b>"
+        )
+
+        linhas.append(
+            link_afiliado
+        )
+
+    linhas.append("")
+    linhas.append(
+        "⚡ PromoConn | Central de Promoções"
     )
 
-    return "\n".join(linhas)
-
-
-def enviar_produto(produto):
-    if not TELEGRAM_TOKEN:
-        raise ValueError(
-            "TELEGRAM_TOKEN não encontrado "
-            "no .env."
-        )
-
-    if not TELEGRAM_CHAT_ID:
-        raise ValueError(
-            "TELEGRAM_CHAT_ID não encontrado "
-            "no .env."
-        )
-
-    link = produto.get(
-        "link_afiliado"
+    return "\n".join(
+        linhas
     )
 
-    if not link:
-        raise ValueError(
-            "Produto sem link de afiliado."
-        )
 
-    url = (
-        f"https://api.telegram.org/"
-        f"bot{TELEGRAM_TOKEN}/sendPhoto"
+# =========================================================
+# ENVIAR PRODUTO
+# =========================================================
+
+def enviar_produto(
+    produto,
+    chat_id=None
+):
+    """
+    Envia o produto para um grupo específico.
+
+    Se chat_id não for informado, usa
+    TELEGRAM_CHAT_ID como fallback.
+    """
+
+    destino = (
+        str(chat_id)
+        if chat_id
+        else TELEGRAM_CHAT_ID
     )
+
+    if not destino:
+        raise RuntimeError(
+            "Nenhum chat_id definido "
+            "para envio."
+        )
 
     mensagem = montar_mensagem(
         produto
     )
 
-    teclado = {
-        "inline_keyboard": [
-            [
-                {
-                    "text":
-                        "🛒 VER OFERTA",
-                    "url":
-                        link,
-                }
-            ]
-        ]
-    }
-
-    dados = {
-        "chat_id":
-            TELEGRAM_CHAT_ID,
-
-        "caption":
-            mensagem,
-
-        "reply_markup":
-            __import__("json").dumps(
-                teclado
-            ),
-    }
-
-    imagem = produto.get(
-        "imagem"
+    url = (
+        "https://api.telegram.org/"
+        f"bot{TELEGRAM_TOKEN}/sendMessage"
     )
 
-    if imagem:
-        dados["photo"] = imagem
+    payload = {
+        "chat_id": destino,
+        "text": mensagem,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": False,
+    }
 
-        resposta = requests.post(
-            url,
-            data=dados,
-            timeout=30
-        )
+    resposta = requests.post(
+        url,
+        json=payload,
+        timeout=30,
+    )
 
-    else:
-        # Se não houver imagem, envia
-        # mensagem normal.
+    try:
+        dados = resposta.json()
 
-        url = (
-            f"https://api.telegram.org/"
-            f"bot{TELEGRAM_TOKEN}/"
-            f"sendMessage"
-        )
-
-        dados.pop(
-            "caption",
-            None
-        )
-
-        dados["text"] = mensagem
-
-        resposta = requests.post(
-            url,
-            data=dados,
-            timeout=30
-        )
-
-    if not resposta.ok:
+    except ValueError:
         raise RuntimeError(
-            "Erro ao enviar Telegram: "
-            + resposta.text
+            "Telegram retornou uma "
+            "resposta inválida."
         )
 
-    return resposta.json()
+    if (
+        resposta.status_code != 200
+        or not dados.get("ok")
+    ):
+        raise RuntimeError(
+            "Erro Telegram: "
+            f"{dados}"
+        )
+
+    return dados
