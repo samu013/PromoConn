@@ -21,22 +21,19 @@
             --azul: #075cca;
             --azul-claro: #0d9cff;
             --ciano: #19c8ff;
-
             --amarelo: #ffe600;
-
             --preto: #101828;
             --cinza-texto: #667085;
             --cinza-claro: #f4f7fb;
             --borda: #e5eaf2;
-
             --verde: #00a650;
             --branco: #ffffff;
-
             --telegram: #229ed9;
         }
 
         body {
             margin: 0;
+            min-height: 100vh;
 
             font-family:
                 Arial,
@@ -44,12 +41,15 @@
                 sans-serif;
 
             background:
-                #f4f7fb;
+                linear-gradient(
+                    180deg,
+                    #eef4fb 0,
+                    #f6f8fc 320px,
+                    #f4f7fb 100%
+                );
 
-            color:
-                var(--preto);
+            color: var(--preto);
         }
-
 
         /* ================================================== */
         /* TOPO                                               */
@@ -64,40 +64,27 @@
                 );
 
             color: white;
+            border-bottom: 5px solid var(--amarelo);
 
-            border-bottom:
-                5px solid
-                var(--amarelo);
+            box-shadow:
+                0 8px 28px
+                rgba(7, 29, 73, 0.18);
         }
 
         .topo-conteudo {
             max-width: 1450px;
-
             margin: auto;
-
-            padding:
-                20px 25px;
+            padding: 20px 25px;
 
             display: flex;
-
-            justify-content:
-                space-between;
-
+            justify-content: space-between;
             align-items: center;
-
             gap: 30px;
         }
 
-
-        /* ================================================== */
-        /* LOGO                                               */
-        /* ================================================== */
-
         .marca {
             display: flex;
-
             align-items: center;
-
             gap: 14px;
         }
 
@@ -105,31 +92,20 @@
             width: 55px;
             height: 55px;
 
-            border:
-                3px solid
-                var(--ciano);
-
+            border: 3px solid var(--ciano);
             border-radius: 18px;
 
-            background:
-                var(--preto);
+            background: var(--preto);
 
             display: flex;
-
             align-items: center;
-
             justify-content: center;
 
             font-size: 27px;
 
             box-shadow:
                 0 0 15px
-                rgba(
-                    25,
-                    200,
-                    255,
-                    0.35
-                );
+                rgba(25, 200, 255, 0.35);
         }
 
         .marca-texto h1 {
@@ -139,67 +115,45 @@
                 "Courier New",
                 monospace;
 
-            letter-spacing:
-                2px;
-
+            letter-spacing: 2px;
             font-size: 27px;
         }
 
         .marca-texto strong {
-            color:
-                var(--ciano);
+            color: var(--ciano);
         }
 
         .marca-texto p {
-            margin:
-                3px 0 0;
-
-            color:
-                var(--amarelo);
-
+            margin: 3px 0 0;
+            color: var(--amarelo);
             font-size: 12px;
-
-            letter-spacing:
-                2px;
+            letter-spacing: 2px;
         }
 
         .status-sistema {
             display: flex;
-
             align-items: center;
-
             gap: 8px;
 
             background:
-                rgba(
-                    255,
-                    255,
-                    255,
-                    0.1
-                );
+                rgba(255, 255, 255, 0.1);
 
-            padding:
-                9px 14px;
-
+            padding: 9px 14px;
             border-radius: 50px;
-
             font-size: 13px;
         }
 
         .status-online {
             width: 9px;
             height: 9px;
-
             border-radius: 50%;
 
-            background:
-                #38e079;
+            background: #38e079;
 
             box-shadow:
                 0 0 8px
                 #38e079;
         }
-
 
         /* ================================================== */
         /* CONTEÚDO                                           */
@@ -207,46 +161,29 @@
 
         main {
             max-width: 1450px;
-
-            margin:
-                28px auto;
-
-            padding:
-                0 22px 60px;
+            margin: 30px auto;
+            padding: 0 22px 60px;
         }
-
-
-        /* ================================================== */
-        /* TÍTULO                                             */
-        /* ================================================== */
 
         .titulo-pagina {
             display: flex;
-
-            justify-content:
-                space-between;
-
+            justify-content: space-between;
             align-items: center;
 
-            margin-bottom: 20px;
-
+            margin-bottom: 22px;
             gap: 20px;
         }
 
         .titulo-pagina h2 {
             margin: 0;
-
-            font-size: 24px;
+            color: var(--azul-escuro);
+            font-size: 25px;
         }
 
         .titulo-pagina p {
-            margin:
-                5px 0 0;
-
-            color:
-                var(--cinza-texto);
+            margin: 6px 0 0;
+            color: var(--cinza-texto);
         }
-
 
         /* ================================================== */
         /* MÉTRICAS                                           */
@@ -262,34 +199,36 @@
                 );
 
             gap: 15px;
-
-            margin-bottom: 22px;
+            margin-bottom: 28px;
         }
 
         .metrica {
             position: relative;
-
             overflow: hidden;
 
             background:
-                var(--branco);
+                rgba(255, 255, 255, 0.96);
 
-            border:
-                1px solid
-                var(--borda);
-
-            border-radius: 15px;
+            border: 1px solid var(--borda);
+            border-radius: 18px;
 
             padding: 20px;
 
             box-shadow:
-                0 4px 18px
-                rgba(
-                    7,
-                    29,
-                    73,
-                    0.05
-                );
+                0 8px 28px
+                rgba(7, 29, 73, 0.07);
+
+            transition:
+                transform 0.2s,
+                box-shadow 0.2s;
+        }
+
+        .metrica:hover {
+            transform: translateY(-3px);
+
+            box-shadow:
+                0 14px 35px
+                rgba(7, 29, 73, 0.11);
         }
 
         .metrica::before {
@@ -303,186 +242,99 @@
 
             width: 5px;
 
-            background:
-                var(--azul-claro);
+            background: var(--azul-claro);
         }
 
         .metrica:nth-child(2)::before {
-            background:
-                var(--amarelo);
+            background: var(--amarelo);
         }
 
         .metrica:nth-child(3)::before {
-            background:
-                var(--verde);
+            background: var(--verde);
         }
 
         .metrica:nth-child(4)::before {
-            background:
-                var(--ciano);
+            background: var(--ciano);
         }
 
         .metrica-icone {
             font-size: 24px;
-
             margin-bottom: 10px;
         }
 
         .metrica-label {
-            color:
-                var(--cinza-texto);
-
-            font-size: 13px;
-
             display: block;
+            color: var(--cinza-texto);
+            font-size: 13px;
         }
 
         .metrica-valor {
             display: block;
-
             margin-top: 4px;
 
             font-size: 30px;
-
             font-weight: bold;
-
-            color:
-                var(--azul-escuro);
+            color: var(--azul-escuro);
         }
-
 
         /* ================================================== */
         /* FILTROS                                            */
         /* ================================================== */
 
+        .area-filtros {
+            margin-bottom: 30px;
+        }
+
         .painel-filtros {
-            background:
-                var(--branco);
-
-            border:
-                1px solid
-                var(--borda);
-
-            border-radius: 15px;
-
-            padding: 18px;
-
-            margin-bottom: 25px;
-
-            box-shadow:
-                0 4px 18px
-                rgba(
-                    7,
-                    29,
-                    73,
-                    0.04
-                );
-        }
-
-        .filtro-titulo {
-            margin-bottom: 14px;
-
-            font-weight: bold;
-
-            color:
-                var(--azul-escuro);
-        }
-
-        .filtros-grid {
-            display: grid;
-
-            grid-template-columns:
-                2fr 1fr 1fr 1fr auto;
-
-            gap: 10px;
-
-            align-items: end;
-        }
-
-        .campo label {
-            display: block;
-
-            margin-bottom: 6px;
-
-            color:
-                var(--cinza-texto);
-
-            font-size: 12px;
-
-            font-weight: bold;
-        }
-
-        .campo input,
-        .campo select {
-            width: 100%;
-
-            padding:
-                11px 12px;
-
-            border:
-                1px solid
-                #ccd5e3;
-
-            border-radius: 9px;
+            position: relative;
 
             background:
-                white;
+                linear-gradient(
+                    145deg,
+                    #ffffff,
+                    #f8fbff
+                );
 
-            font-size: 14px;
+            border: 1px solid #dbe5f2;
+            border-radius: 20px;
 
-            outline: none;
-        }
-
-        .campo input:focus,
-        .campo select:focus {
-            border-color:
-                var(--azul-claro);
+            padding: 22px;
 
             box-shadow:
-                0 0 0 3px
-                rgba(
-                    13,
-                    156,
-                    255,
-                    0.12
-                );
+                0 10px 35px
+                rgba(7, 29, 73, 0.08);
         }
 
+        .filtros-cabecalho {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
 
-        /* ================================================== */
-        /* BOTÕES                                             */
-        /* ================================================== */
+            gap: 20px;
 
-        button,
-        .botao {
-            border: none;
+            padding-bottom: 17px;
+            margin-bottom: 18px;
 
-            border-radius: 9px;
-
-            padding:
-                11px 16px;
-
-            font-weight: bold;
-
-            cursor: pointer;
-
-            font-size: 14px;
-
-            text-align: center;
-
-            text-decoration: none;
-
-            transition:
-                0.2s;
+            border-bottom:
+                1px solid #e8eef6;
         }
 
-        button:hover,
-        .botao:hover {
-            transform:
-                translateY(-1px);
+        .filtros-titulo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .botao-filtrar {
+        .filtros-icone {
+            width: 42px;
+            height: 42px;
+
+            border-radius: 12px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
             background:
                 linear-gradient(
                     135deg,
@@ -491,21 +343,186 @@
                 );
 
             color: white;
+            font-size: 19px;
+
+            box-shadow:
+                0 6px 15px
+                rgba(7, 92, 202, 0.18);
         }
 
-        .limpar {
-            display: inline-block;
+        .filtros-titulo h3 {
+            margin: 0;
+            color: var(--azul-escuro);
+            font-size: 17px;
+        }
 
-            margin-top: 12px;
+        .filtros-titulo p {
+            margin: 4px 0 0;
+            color: var(--cinza-texto);
+            font-size: 12px;
+        }
 
-            color:
-                var(--azul);
+        .filtros-resultados {
+            padding: 7px 12px;
+
+            background: #eaf4ff;
+            color: var(--azul);
+
+            border-radius: 30px;
+
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .filtros-grid {
+            display: grid;
+
+            grid-template-columns:
+                minmax(230px, 2fr)
+                minmax(150px, 1fr)
+                minmax(150px, 1fr)
+                minmax(160px, 1fr);
+
+            gap: 14px;
+        }
+
+        .campo label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+
+            margin-bottom: 7px;
+
+            color: #475467;
+
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .campo input,
+        .campo select {
+            width: 100%;
+            min-height: 44px;
+
+            padding: 0 13px;
+
+            border: 1px solid #d0d9e6;
+            border-radius: 11px;
+
+            background: #ffffff;
+            color: var(--preto);
+
+            font-size: 14px;
+            outline: none;
+
+            transition:
+                border-color 0.2s,
+                box-shadow 0.2s;
+        }
+
+        .campo input:hover,
+        .campo select:hover {
+            border-color: #aabbd3;
+        }
+
+        .campo input:focus,
+        .campo select:focus {
+            border-color: var(--azul-claro);
+
+            box-shadow:
+                0 0 0 4px
+                rgba(13, 156, 255, 0.10);
+        }
+
+        .filtros-acoes {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        /* ================================================== */
+        /* BOTÕES                                             */
+        /* ================================================== */
+
+        button,
+        .botao {
+            border: none;
+            border-radius: 10px;
+
+            padding: 11px 16px;
+
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+
+            text-align: center;
+            text-decoration: none;
+
+            transition:
+                transform 0.2s,
+                box-shadow 0.2s,
+                background 0.2s;
+        }
+
+        button:hover,
+        .botao:hover {
+            transform: translateY(-1px);
+        }
+
+        .botao-filtrar {
+            min-width: 145px;
+            min-height: 43px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--azul),
+                    var(--azul-claro)
+                );
+
+            color: white;
+
+            box-shadow:
+                0 7px 18px
+                rgba(7, 92, 202, 0.20);
+        }
+
+        .botao-filtrar:hover {
+            box-shadow:
+                0 10px 22px
+                rgba(7, 92, 202, 0.28);
+        }
+
+        .botao-limpar {
+            min-height: 43px;
+
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 0 15px;
+
+            border: 1px solid #d6deea;
+            border-radius: 10px;
+
+            background: white;
+            color: #667085;
 
             text-decoration: none;
 
             font-size: 13px;
+            font-weight: bold;
         }
 
+        .botao-limpar:hover {
+            border-color: var(--azul-claro);
+            color: var(--azul);
+            background: #f5faff;
+        }
 
         /* ================================================== */
         /* RESULTADOS                                         */
@@ -513,10 +530,7 @@
 
         .resultado-cabecalho {
             display: flex;
-
-            justify-content:
-                space-between;
-
+            justify-content: space-between;
             align-items: center;
 
             margin-bottom: 17px;
@@ -524,18 +538,13 @@
 
         .resultado-cabecalho h2 {
             margin: 0;
-
-            color:
-                var(--azul-escuro);
+            color: var(--azul-escuro);
         }
 
         .resultado-cabecalho span {
-            color:
-                var(--cinza-texto);
-
+            color: var(--cinza-texto);
             font-size: 14px;
         }
-
 
         /* ================================================== */
         /* CARDS                                              */
@@ -558,53 +567,38 @@
 
         .produto {
             background:
-                var(--branco);
+                rgba(255, 255, 255, 0.96);
 
-            border:
-                1px solid
-                var(--borda);
-
-            border-radius: 16px;
+            border: 1px solid #e1e8f1;
+            border-radius: 20px;
 
             overflow: hidden;
 
             box-shadow:
-                0 5px 20px
-                rgba(
-                    7,
-                    29,
-                    73,
-                    0.06
-                );
+                0 8px 30px
+                rgba(7, 29, 73, 0.07);
 
             transition:
-                0.2s;
+                transform 0.25s,
+                box-shadow 0.25s,
+                border-color 0.25s;
         }
 
         .produto:hover {
-            transform:
-                translateY(-3px);
+            transform: translateY(-5px);
 
             box-shadow:
-                0 10px 28px
-                rgba(
-                    7,
-                    29,
-                    73,
-                    0.12
-                );
+                0 18px 45px
+                rgba(7, 29, 73, 0.13);
 
-            border-color:
-                #cbdcf3;
+            border-color: #bbd4f2;
         }
 
         .imagem-box {
             height: 245px;
 
             display: flex;
-
             align-items: center;
-
             justify-content: center;
 
             padding: 18px;
@@ -624,7 +618,6 @@
         .imagem-box img {
             width: 100%;
             height: 100%;
-
             object-fit: contain;
         }
 
@@ -632,90 +625,64 @@
             padding: 18px;
         }
 
-
         /* ================================================== */
         /* BADGES                                             */
         /* ================================================== */
 
         .badges {
             display: flex;
-
             flex-wrap: wrap;
 
             gap: 6px;
-
             margin-bottom: 12px;
         }
 
         .badge {
-            padding:
-                6px 10px;
+            padding: 6px 10px;
 
             border-radius: 30px;
 
             font-size: 12px;
-
             font-weight: bold;
         }
 
         .badge-score {
-            background:
-                #e8f3ff;
-
-            color:
-                var(--azul);
+            background: #e8f3ff;
+            color: var(--azul);
         }
 
         .badge-ranking {
-            background:
-                #fff7cc;
-
-            color:
-                #957500;
+            background: #fff7cc;
+            color: #957500;
         }
 
         .badge-pronto {
-            background:
-                #dff8e9;
-
-            color:
-                #087d3e;
+            background: #dff8e9;
+            color: #087d3e;
         }
 
         .badge-aguardando {
-            background:
-                #edf1f5;
-
-            color:
-                #667085;
+            background: #edf1f5;
+            color: #667085;
         }
-
 
         /* ================================================== */
         /* PRODUTO                                            */
         /* ================================================== */
 
         .produto h3 {
-            margin:
-                0 0 9px;
+            margin: 0 0 9px;
 
             font-size: 17px;
-
             line-height: 1.4;
-
-            color:
-                var(--preto);
+            color: var(--preto);
         }
 
         .categoria {
-            color:
-                var(--cinza-texto);
-
+            color: var(--cinza-texto);
             font-size: 13px;
-
             margin-bottom: 13px;
         }
-
 
         /* ================================================== */
         /* PREÇO                                              */
@@ -723,19 +690,14 @@
 
         .preco-antigo {
             color: #98a2b3;
-
-            text-decoration:
-                line-through;
-
+            text-decoration: line-through;
             font-size: 13px;
         }
 
         .preco {
-            color:
-                var(--azul-escuro);
+            color: var(--azul-escuro);
 
             font-size: 27px;
-
             font-weight: bold;
 
             margin-top: 3px;
@@ -746,14 +708,11 @@
 
             margin-top: 5px;
 
-            color:
-                var(--verde);
+            color: var(--verde);
 
             font-size: 14px;
-
             font-weight: bold;
         }
-
 
         /* ================================================== */
         /* TENDÊNCIAS                                         */
@@ -761,29 +720,22 @@
 
         .tendencias {
             margin-top: 14px;
-
             padding: 11px;
 
             border-radius: 9px;
 
-            background:
-                #f5f9ff;
-
+            background: #f5f9ff;
             font-size: 12px;
         }
 
         .tendencias strong {
-            color:
-                var(--azul-escuro);
+            color: var(--azul-escuro);
         }
 
         .tendencia {
-            color:
-                #16803c;
-
+            color: #16803c;
             margin-top: 4px;
         }
-
 
         /* ================================================== */
         /* AÇÕES                                              */
@@ -791,23 +743,17 @@
 
         .botao-produto {
             display: block;
-
             width: 100%;
 
             margin-top: 14px;
 
-            background:
-                #edf5ff;
-
-            color:
-                var(--azul);
+            background: #edf5ff;
+            color: var(--azul);
         }
 
         .botao-produto:hover {
-            background:
-                #dcebff;
+            background: #dcebff;
         }
-
 
         /* ================================================== */
         /* FORM OFERTA                                        */
@@ -815,7 +761,6 @@
 
         .form-oferta {
             margin-top: 15px;
-
             padding-top: 13px;
 
             border-top:
@@ -826,72 +771,47 @@
         .form-oferta label {
             display: block;
 
-            margin:
-                9px 0 5px;
+            margin: 9px 0 5px;
 
-            color:
-                var(--cinza-texto);
+            color: var(--cinza-texto);
 
             font-size: 12px;
-
             font-weight: bold;
         }
 
         .form-oferta input {
             width: 100%;
 
-            padding:
-                10px 11px;
+            padding: 10px 11px;
 
-            border:
-                1px solid
-                #ccd5e3;
-
-            border-radius: 8px;
+            border: 1px solid #ccd5e3;
+            border-radius: 9px;
 
             outline: none;
-
             font-size: 14px;
         }
 
         .form-oferta input:focus {
-            border-color:
-                var(--azul-claro);
+            border-color: var(--azul-claro);
 
             box-shadow:
                 0 0 0 3px
-                rgba(
-                    13,
-                    156,
-                    255,
-                    0.10
-                );
+                rgba(13, 156, 255, 0.10);
         }
-
-
-        /* CAMPO DE MOEDA */
 
         .input-moeda {
             font-weight: bold;
-
-            color:
-                var(--azul-escuro);
-
-            background:
-                #f8fbff;
+            color: var(--azul-escuro);
+            background: #f8fbff;
         }
 
         .input-moeda::placeholder {
-            color:
-                #98a2b3;
-
+            color: #98a2b3;
             font-weight: normal;
         }
 
-
         .botao-salvar {
             width: 100%;
-
             margin-top: 12px;
 
             background:
@@ -906,15 +826,11 @@
 
         .botao-telegram {
             width: 100%;
-
             margin-top: 14px;
 
-            background:
-                var(--telegram);
-
+            background: var(--telegram);
             color: white;
         }
-
 
         /* ================================================== */
         /* PAGINAÇÃO                                          */
@@ -922,89 +838,71 @@
 
         .paginacao {
             display: flex;
-
             align-items: center;
-
             justify-content: center;
 
             gap: 15px;
-
             margin-top: 32px;
         }
 
         .pagina-botao {
-            padding:
-                10px 15px;
+            padding: 10px 15px;
 
-            border:
-                1px solid
-                var(--borda);
+            border: 1px solid var(--borda);
+            border-radius: 9px;
 
-            border-radius: 8px;
-
-            background:
-                white;
-
-            color:
-                var(--azul);
+            background: white;
+            color: var(--azul);
 
             text-decoration: none;
-
             font-weight: bold;
         }
 
         .pagina-info {
-            color:
-                var(--cinza-texto);
-
+            color: var(--cinza-texto);
             font-size: 14px;
         }
-
 
         /* ================================================== */
         /* RODAPÉ                                             */
         /* ================================================== */
 
         footer {
-            border-top:
-                1px solid
-                var(--borda);
+            border-top: 1px solid var(--borda);
 
             text-align: center;
-
             padding: 25px;
 
-            color:
-                var(--cinza-texto);
-
+            color: var(--cinza-texto);
             font-size: 12px;
         }
 
         footer strong {
-            color:
-                var(--azul);
+            color: var(--azul);
         }
-
 
         /* ================================================== */
         /* RESPONSIVO                                         */
         /* ================================================== */
 
         @media (
+            max-width: 1000px
+        ) {
+            .filtros-grid {
+                grid-template-columns:
+                    1fr 1fr;
+            }
+        }
+
+        @media (
             max-width: 900px
         ) {
-
             .metricas {
                 grid-template-columns:
                     repeat(
                         2,
                         1fr
                     );
-            }
-
-            .filtros-grid {
-                grid-template-columns:
-                    1fr 1fr;
             }
 
             .status-sistema {
@@ -1015,10 +913,8 @@
         @media (
             max-width: 600px
         ) {
-
             .topo-conteudo {
-                padding:
-                    16px;
+                padding: 16px;
             }
 
             .marca-texto h1 {
@@ -1047,35 +943,38 @@
                 font-size: 24px;
             }
 
+            .filtros-cabecalho {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
             .filtros-grid {
-                grid-template-columns:
-                    1fr;
+                grid-template-columns: 1fr;
+            }
+
+            .filtros-acoes {
+                flex-direction: column-reverse;
+            }
+
+            .filtros-acoes > * {
+                width: 100%;
             }
 
             .resultado-cabecalho {
-                align-items:
-                    flex-start;
-
-                flex-direction:
-                    column;
+                align-items: flex-start;
+                flex-direction: column;
             }
 
             .produtos-grid {
-                grid-template-columns:
-                    1fr;
+                grid-template-columns: 1fr;
             }
         }
-
     </style>
-
 </head>
-
 
 <body>
 
-
 <header class="topo">
-
     <div class="topo-conteudo">
 
         <div class="marca">
@@ -1085,7 +984,6 @@
             </div>
 
             <div class="marca-texto">
-
                 <h1>
                     PROMO<strong>CONN</strong>
                 </h1>
@@ -1093,32 +991,27 @@
                 <p>
                     CENTRAL DE PROMOÇÕES
                 </p>
-
             </div>
 
         </div>
 
-
         <div class="status-sistema">
-
             <span class="status-online"></span>
-
             Sistema online
-
         </div>
 
     </div>
-
 </header>
-
 
 <main>
 
+    <!-- ================================================= -->
+    <!-- TÍTULO                                            -->
+    <!-- ================================================= -->
 
     <div class="titulo-pagina">
 
         <div>
-
             <h2>
                 👋 Central de oportunidades
             </h2>
@@ -1127,11 +1020,9 @@
                 Encontre, prepare e publique
                 as melhores promoções.
             </p>
-
         </div>
 
     </div>
-
 
     <!-- ================================================= -->
     <!-- MÉTRICAS                                          -->
@@ -1140,7 +1031,6 @@
     <section class="metricas">
 
         <div class="metrica">
-
             <div class="metrica-icone">
                 🔥
             </div>
@@ -1152,12 +1042,9 @@
             <span class="metrica-valor">
                 {{ total_oportunidades }}
             </span>
-
         </div>
 
-
         <div class="metrica">
-
             <div class="metrica-icone">
                 ⏳
             </div>
@@ -1169,12 +1056,9 @@
             <span class="metrica-valor">
                 {{ total_aguardando }}
             </span>
-
         </div>
 
-
         <div class="metrica">
-
             <div class="metrica-icone">
                 🚀
             </div>
@@ -1186,12 +1070,9 @@
             <span class="metrica-valor">
                 {{ total_prontos }}
             </span>
-
         </div>
 
-
         <div class="metrica">
-
             <div class="metrica-icone">
                 ✅
             </div>
@@ -1203,195 +1084,211 @@
             <span class="metrica-valor">
                 {{ total_publicados }}
             </span>
-
         </div>
 
     </section>
-
 
     <!-- ================================================= -->
     <!-- FILTROS                                           -->
     <!-- ================================================= -->
 
-    <section class="painel-filtros">
+    <section class="area-filtros">
 
-        <div class="filtro-titulo">
-            🔎 Encontrar oportunidades
-        </div>
+        <div class="painel-filtros">
 
-        <form
-            method="GET"
-            action="{{ url_for('painel') }}"
-        >
+            <div class="filtros-cabecalho">
 
-            <div class="filtros-grid">
+                <div class="filtros-titulo">
 
-                <div class="campo">
+                    <div class="filtros-icone">
+                        🔎
+                    </div>
 
-                    <label>
-                        Produto
-                    </label>
+                    <div>
+                        <h3>
+                            Filtros de oportunidades
+                        </h3>
 
-                    <input
-                        type="text"
-                        name="busca"
-                        value="{{ busca }}"
-                        placeholder="Samsung, notebook, creatina..."
-                    >
+                        <p>
+                            Encontre rapidamente os produtos
+                            que deseja preparar.
+                        </p>
+                    </div>
 
                 </div>
 
+                <div class="filtros-resultados">
+                    {{ total_filtrado }}
+                    produto(s)
+                </div>
 
-                <div class="campo">
+            </div>
 
-                    <label>
-                        Categoria
-                    </label>
+            <form
+                method="GET"
+                action="{{ url_for('painel') }}"
+            >
 
-                    <select name="categoria">
+                <div class="filtros-grid">
 
-                        <option value="">
-                            Todas
-                        </option>
+                    <div class="campo">
+                        <label>
+                            🔍 Produto
+                        </label>
 
-                        {% for categoria in categorias %}
+                        <input
+                            type="text"
+                            name="busca"
+                            value="{{ busca }}"
+                            placeholder="Ex.: Samsung Galaxy..."
+                        >
+                    </div>
+
+                    <div class="campo">
+                        <label>
+                            📦 Categoria
+                        </label>
+
+                        <select name="categoria">
+
+                            <option value="">
+                                Todas as categorias
+                            </option>
+
+                            {% for categoria in categorias %}
+
+                                <option
+                                    value="{{ categoria }}"
+
+                                    {% if
+                                        categoria
+                                        == categoria_selecionada
+                                    %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    {{ categoria }}
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+                    </div>
+
+                    <div class="campo">
+                        <label>
+                            ⚡ Status
+                        </label>
+
+                        <select name="status">
+
+                            <option value="">
+                                Todos
+                            </option>
 
                             <option
-                                value="{{ categoria }}"
+                                value="aguardando_link"
 
                                 {% if
-                                    categoria
-                                    == categoria_selecionada
+                                    status_selecionado
+                                    == "aguardando_link"
                                 %}
                                     selected
                                 {% endif %}
                             >
-                                {{ categoria }}
+                                Aguardando
                             </option>
 
-                        {% endfor %}
+                            <option
+                                value="pronto_publicar"
 
-                    </select>
+                                {% if
+                                    status_selecionado
+                                    == "pronto_publicar"
+                                %}
+                                    selected
+                                {% endif %}
+                            >
+                                Prontos para publicar
+                            </option>
 
-                </div>
+                        </select>
+                    </div>
 
+                    <div class="campo">
+                        <label>
+                            ↕ Ordenar por
+                        </label>
 
-                <div class="campo">
+                        <select name="ordem">
 
-                    <label>
-                        Status
-                    </label>
+                            <option
+                                value="score"
 
-                    <select name="status">
+                                {% if
+                                    ordem_selecionada
+                                    == "score"
+                                %}
+                                    selected
+                                {% endif %}
+                            >
+                                🔥 Maior score
+                            </option>
 
-                        <option value="">
-                            Todos
-                        </option>
+                            <option
+                                value="ranking"
 
-                        <option
-                            value="aguardando_link"
+                                {% if
+                                    ordem_selecionada
+                                    == "ranking"
+                                %}
+                                    selected
+                                {% endif %}
+                            >
+                                🏆 Melhor ranking
+                            </option>
 
-                            {% if
-                                status_selecionado
-                                == "aguardando_link"
-                            %}
-                                selected
-                            {% endif %}
-                        >
-                            Aguardando
-                        </option>
+                            <option
+                                value="nome"
 
-                        <option
-                            value="pronto_publicar"
+                                {% if
+                                    ordem_selecionada
+                                    == "nome"
+                                %}
+                                    selected
+                                {% endif %}
+                            >
+                                🔤 Nome A-Z
+                            </option>
 
-                            {% if
-                                status_selecionado
-                                == "pronto_publicar"
-                            %}
-                                selected
-                            {% endif %}
-                        >
-                            Prontos
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <div class="campo">
-
-                    <label>
-                        Ordenação
-                    </label>
-
-                    <select name="ordem">
-
-                        <option
-                            value="score"
-
-                            {% if
-                                ordem_selecionada
-                                == "score"
-                            %}
-                                selected
-                            {% endif %}
-                        >
-                            Maior score
-                        </option>
-
-                        <option
-                            value="ranking"
-
-                            {% if
-                                ordem_selecionada
-                                == "ranking"
-                            %}
-                                selected
-                            {% endif %}
-                        >
-                            Melhor ranking
-                        </option>
-
-                        <option
-                            value="nome"
-
-                            {% if
-                                ordem_selecionada
-                                == "nome"
-                            %}
-                                selected
-                            {% endif %}
-                        >
-                            Nome A-Z
-                        </option>
-
-                    </select>
+                        </select>
+                    </div>
 
                 </div>
 
+                <div class="filtros-acoes">
 
-                <button
-                    type="submit"
-                    class="botao-filtrar"
-                >
-                    🔎 Filtrar
-                </button>
+                    <a
+                        href="{{ url_for('painel') }}"
+                        class="botao-limpar"
+                    >
+                        ✕ Limpar
+                    </a>
 
-            </div>
+                    <button
+                        type="submit"
+                        class="botao-filtrar"
+                    >
+                        🔎 Aplicar filtros
+                    </button>
 
-        </form>
+                </div>
 
+            </form>
 
-        <a
-            href="{{ url_for('painel') }}"
-            class="limpar"
-        >
-            ✕ Limpar filtros
-        </a>
+        </div>
 
     </section>
-
 
     <!-- ================================================= -->
     <!-- RESULTADOS                                        -->
@@ -1410,15 +1307,11 @@
 
     </div>
 
-
     <section class="produtos-grid">
-
 
         {% for produto in produtos %}
 
-
             <article class="produto">
-
 
                 <!-- IMAGEM -->
 
@@ -1439,9 +1332,7 @@
 
                 </div>
 
-
                 <div class="produto-conteudo">
-
 
                     <!-- BADGES -->
 
@@ -1456,7 +1347,6 @@
                             🔥 {{ produto.pontuacao }}
                         </span>
 
-
                         <span
                             class="
                                 badge
@@ -1465,7 +1355,6 @@
                         >
                             🏆 #{{ produto.ranking }}
                         </span>
-
 
                         {% if
                             produto.status
@@ -1496,13 +1385,11 @@
 
                     </div>
 
-
                     <!-- PRODUTO -->
 
                     <h3>
                         {{ produto.nome }}
                     </h3>
-
 
                     <div class="categoria">
 
@@ -1513,7 +1400,6 @@
                         {{ produto.tipo }}
 
                     </div>
-
 
                     <!-- PREÇO -->
 
@@ -1542,7 +1428,6 @@
 
                         {% endif %}
 
-
                         <div class="preco">
 
                             R$
@@ -1556,7 +1441,6 @@
                             }}
 
                         </div>
-
 
                         {% if produto.desconto %}
 
@@ -1577,7 +1461,6 @@
 
                     {% endif %}
 
-
                     <!-- TENDÊNCIAS -->
 
                     {% if produto.tendencias %}
@@ -1593,10 +1476,8 @@
                             %}
 
                                 <div class="tendencia">
-
                                     #{{ tendencia.posicao }}
                                     {{ tendencia.palavra }}
-
                                 </div>
 
                             {% endfor %}
@@ -1605,18 +1486,14 @@
 
                     {% endif %}
 
-
                     <!-- ABRIR PRODUTO -->
 
                     {% if produto.link_produto %}
 
                         <a
                             href="{{ produto.link_produto }}"
-
                             target="_blank"
-
                             rel="noopener noreferrer"
-
                             class="
                                 botao
                                 botao-produto
@@ -1626,7 +1503,6 @@
                         </a>
 
                     {% endif %}
-
 
                     <!-- PREPARAR -->
 
@@ -1639,7 +1515,6 @@
 
                         <form
                             class="form-oferta"
-
                             method="POST"
 
                             action="{{
@@ -1653,14 +1528,11 @@
 
                             <input
                                 type="hidden"
-
                                 name="link_produto"
-
                                 value="{{
                                     produto.link_produto
                                 }}"
                             >
-
 
                             <label>
                                 💰 Preço atual
@@ -1668,20 +1540,13 @@
 
                             <input
                                 type="text"
-
                                 name="preco"
-
                                 class="input-moeda"
-
                                 placeholder="R$ 0,00"
-
                                 inputmode="numeric"
-
                                 autocomplete="off"
-
                                 required
                             >
-
 
                             <label>
                                 Preço anterior
@@ -1689,18 +1554,12 @@
 
                             <input
                                 type="text"
-
                                 name="preco_original"
-
                                 class="input-moeda"
-
                                 placeholder="R$ 0,00"
-
                                 inputmode="numeric"
-
                                 autocomplete="off"
                             >
-
 
                             <label>
                                 🔗 Link de afiliado
@@ -1708,23 +1567,15 @@
 
                             <input
                                 type="url"
-
                                 name="link_afiliado"
-
                                 placeholder="https://meli.la/..."
-
                                 autocomplete="off"
-
                                 required
                             >
 
-
                             <button
                                 type="submit"
-
-                                class="
-                                    botao-salvar
-                                "
+                                class="botao-salvar"
                             >
                                 ⚡ Preparar promoção
                             </button>
@@ -1732,7 +1583,6 @@
                         </form>
 
                     {% endif %}
-
 
                     <!-- TELEGRAM -->
 
@@ -1755,10 +1605,7 @@
 
                             <button
                                 type="submit"
-
-                                class="
-                                    botao-telegram
-                                "
+                                class="botao-telegram"
                             >
                                 🚀 Publicar no Telegram
                             </button>
@@ -1767,11 +1614,9 @@
 
                     {% endif %}
 
-
                 </div>
 
             </article>
-
 
         {% else %}
 
@@ -1781,9 +1626,7 @@
 
         {% endfor %}
 
-
     </section>
-
 
     <!-- ================================================= -->
     <!-- PAGINAÇÃO                                         -->
@@ -1792,7 +1635,6 @@
     {% if total_paginas > 1 %}
 
         <nav class="paginacao">
-
 
             {% if pagina > 1 %}
 
@@ -1818,7 +1660,6 @@
 
             {% endif %}
 
-
             <span class="pagina-info">
 
                 Página
@@ -1827,7 +1668,6 @@
                 {{ total_paginas }}
 
             </span>
-
 
             {% if pagina < total_paginas %}
 
@@ -1853,83 +1693,66 @@
 
             {% endif %}
 
-
         </nav>
 
     {% endif %}
 
-
 </main>
 
-
 <footer>
-
     <strong>
         PROMOCONN
     </strong>
 
     · Central de Promoções
-
 </footer>
 
-
 <script>
-
     // =====================================================
-    // FORMATAÇÃO DE MOEDA
+    // MÁSCARA DE MOEDA
+    // 1 -> R$ 0,01
+    // 1234 -> R$ 12,34
+    // 123456 -> R$ 1.234,56
     // =====================================================
 
     function formatarMoeda(input) {
-
         let numeros = input.value.replace(
             /\D/g,
             ""
         );
-
 
         if (!numeros) {
             input.value = "";
             return;
         }
 
-
         numeros = numeros.padStart(
             3,
             "0"
         );
 
-
         const centavos = numeros.slice(
             -2
         );
-
 
         let inteiro = numeros.slice(
             0,
             -2
         );
 
-
         inteiro = parseInt(
             inteiro,
             10
         ).toString();
-
 
         inteiro = inteiro.replace(
             /\B(?=(\d{3})+(?!\d))/g,
             "."
         );
 
-
         input.value =
             `R$ ${inteiro},${centavos}`;
     }
-
-
-    // =====================================================
-    // ATIVA NOS INPUTS
-    // =====================================================
 
     document.querySelectorAll(
         ".input-moeda"
@@ -1945,11 +1768,9 @@
                 }
             );
 
-
             input.addEventListener(
                 "paste",
                 () => {
-
                     setTimeout(
                         () => {
                             formatarMoeda(
@@ -1958,26 +1779,21 @@
                         },
                         0
                     );
-
                 }
             );
-
         }
     );
 
-
     // =====================================================
-    // VALIDA PREÇO ANTERIOR
+    // VALIDAÇÃO DE PREÇO
     // =====================================================
 
     function moedaParaNumero(
         valor
     ) {
-
         if (!valor) {
             return null;
         }
-
 
         const limpo = valor
             .replace(
@@ -1994,11 +1810,9 @@
             )
             .trim();
 
-
         const numero = Number(
             limpo
         );
-
 
         if (
             Number.isNaN(
@@ -2008,10 +1822,8 @@
             return null;
         }
 
-
         return numero;
     }
-
 
     document.querySelectorAll(
         ".form-oferta"
@@ -2027,24 +1839,20 @@
                             'input[name="preco"]'
                         );
 
-
                     const anterior =
                         form.querySelector(
                             'input[name="preco_original"]'
                         );
-
 
                     const precoAtual =
                         moedaParaNumero(
                             atual.value
                         );
 
-
                     const precoAnterior =
                         moedaParaNumero(
                             anterior.value
                         );
-
 
                     if (
                         precoAnterior !== null
@@ -2053,28 +1861,19 @@
                         &&
                         precoAnterior <= precoAtual
                     ) {
-
                         evento.preventDefault();
-
 
                         alert(
                             "O preço anterior deve ser maior que o preço atual."
                         );
 
-
                         anterior.focus();
-
                     }
-
                 }
             );
-
         }
     );
-
 </script>
 
-
 </body>
-
 </html>
