@@ -327,6 +327,30 @@ PromoConn - Aguardando Link
                             value="{{ produto.link_produto }}"
                         >
 
+                        <input
+                            type="hidden"
+                            name="retorno_busca"
+                            value="{{ busca }}"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="retorno_categoria"
+                            value="{{ categoria_selecionada }}"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="retorno_ordem"
+                            value="{{ ordem_selecionada }}"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="retorno_pagina"
+                            value="{{ pagina }}"
+                        >
+
                         <label>
                             Preço atual
                         </label>
@@ -334,7 +358,7 @@ PromoConn - Aguardando Link
                         <input
                             type="text"
                             name="preco"
-                            class="input-moeda"
+                            class="input-moeda input-preco-atual"
                             placeholder="R$ 0,00"
                             inputmode="numeric"
                             autocomplete="off"
@@ -612,6 +636,27 @@ PromoConn - Aguardando Link
                 }
             );
 
+        }
+    );
+
+    // Ao entrar/voltar para /link, posiciona o cursor
+    // no preço atual do primeiro produto disponível.
+    window.addEventListener(
+        "DOMContentLoaded",
+        () => {
+            const primeiroPreco =
+                document.querySelector(
+                    ".input-preco-atual"
+                );
+
+            if (primeiroPreco) {
+                primeiroPreco.focus();
+
+                primeiroPreco.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+            }
         }
     );
 </script>
