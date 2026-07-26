@@ -1,7 +1,11 @@
 import math
+import os
+import threading
+import hmac
 
 from flask import (
     Flask,
+    abort,
     redirect,
     render_template,
     request,
@@ -19,14 +23,51 @@ from services.pontuacao import (
 
 from services.publicador import (
     publicar_produto_por_id,
+    publicar_proxima_promocao,
+)
+
+from coletor_worker import (
+    executar_coleta,
 )
 
 
+# =========================================================
+# FLASK
+# =========================================================
+
 app = Flask(__name__)
 
-criar_tabelas()
 
 ITENS_POR_PAGINA = 20
+
+
+# =========================================================
+# CRON
+# =========================================================
+
+CRON_SECRET = os.getenv(
+    "CRON_SECRET"
+)
+
+
+# Evita iniciar duas coletas ao mesmo tempo
+_lock_coleta = threading.Lock()
+
+
+# Evita duas publicações simultâneas
+_lock_publicacao = threading.Lock()
+
+
+# =========================================================
+# BANCO
+# =========================================================
+
+# Importante:
+# gunicorn app:app não executa o bloco
+# if __name__ == "__main__".
+#
+# Por isso verificamos as tabelas aqui.
+criar_tabelas()
 
 
 # =========================================================
@@ -43,8 +84,11 @@ def converter_preco(texto):
         .strip()
     )
 
-    # Formato brasileiro:
-    # 1.299,90 -> 1299.90
+    # Exemplo:
+    #
+    # R$ 1.299,90
+    # ↓
+    # 1299.90
 
     if "," in texto:
         texto = (
@@ -60,7 +104,8 @@ def filtrar_produtos(
     produtos,
     busca,
     categoria,
-    ordem
+    status,
+    ordem,
 ):
     resultado = list(
         produtos
@@ -76,8 +121,12 @@ def filtrar_produtos(
         resultado = [
             produto
             for produto in resultado
+
             if termo
-            in produto["nome"].lower()
+            in produto.get(
+                "nome",
+                ""
+            ).lower()
         ]
 
     # =====================================================
@@ -88,8 +137,26 @@ def filtrar_produtos(
         resultado = [
             produto
             for produto in resultado
-            if produto["categoria"]
+
+            if produto.get(
+                "categoria"
+            )
             == categoria
+        ]
+
+    # =====================================================
+    # STATUS
+    # =====================================================
+
+    if status:
+        resultado = [
+            produto
+            for produto in resultado
+
+            if produto.get(
+                "status"
+            )
+            == status
         ]
 
     # =====================================================
@@ -97,29 +164,81 @@ def filtrar_produtos(
     # =====================================================
 
     if ordem == "ranking":
+
         resultado.sort(
             key=lambda produto: (
-                produto["ranking"]
-                if produto["ranking"]
+                produto.get(
+                    "ranking"
+                )
+
+                if produto.get(
+                    "ranking"
+                )
                 is not None
-                else 999
+
+                else 999999
             )
         )
 
     elif ordem == "nome":
+
         resultado.sort(
             key=lambda produto:
-                produto["nome"].lower()
+                produto.get(
+                    "nome",
+                    ""
+                ).lower()
         )
 
     else:
+
+        # Maior score primeiro
         resultado.sort(
             key=lambda produto:
-                produto["pontuacao"],
-            reverse=True
+                produto.get(
+                    "pontuacao",
+                    0
+                ),
+
+            reverse=True,
         )
 
     return resultado
+
+
+# =========================================================
+# SEGURANÇA DO CRON
+# =========================================================
+
+def validar_cron():
+    """
+    Valida o header enviado pelo cron-job.org.
+
+    Header esperado:
+
+    X-Cron-Secret: SUA_CHAVE
+    """
+
+    if not CRON_SECRET:
+        print(
+            "ERRO: CRON_SECRET "
+            "não configurado."
+        )
+
+        abort(500)
+
+    token_recebido = (
+        request.headers.get(
+            "X-Cron-Secret",
+            ""
+        )
+    )
+
+    if not hmac.compare_digest(
+        token_recebido,
+        CRON_SECRET,
+    ):
+        abort(401)
 
 
 # =========================================================
@@ -134,25 +253,9 @@ def painel():
         )
     )
 
-    fila_publicacao = [
-        produto
-        for produto in todos_produtos
-        if produto["status"]
-        == "pronto_publicar"
-    ]
-
-    oportunidades_ativas = [
-        produto
-        for produto in todos_produtos
-        if produto["status"]
-        == "aguardando_link"
-    ]
-
-    fila_publicacao.sort(
-        key=lambda produto:
-            produto["pontuacao"],
-        reverse=True
-    )
+    # =====================================================
+    # FILTROS RECEBIDOS
+    # =====================================================
 
     busca = request.args.get(
         "busca",
@@ -161,6 +264,11 @@ def painel():
 
     categoria = request.args.get(
         "categoria",
+        ""
+    ).strip()
+
+    status = request.args.get(
+        "status",
         ""
     ).strip()
 
@@ -190,25 +298,44 @@ def painel():
     # =====================================================
 
     total_oportunidades = len(
-        oportunidades_ativas
+        todos_produtos
     )
 
-    total_aguardando = len(
-        oportunidades_ativas
+    total_aguardando = sum(
+        1
+        for produto in todos_produtos
+
+        if produto.get(
+            "status"
+        )
+        == "aguardando_link"
     )
 
-    total_prontos = len(
-        fila_publicacao
+    total_prontos = sum(
+        1
+        for produto in todos_produtos
+
+        if produto.get(
+            "status"
+        )
+        == "pronto_publicar"
     )
+
+    # =====================================================
+    # TOTAL PUBLICADOS
+    # =====================================================
 
     conexao = conectar()
     cursor = conexao.cursor()
 
     try:
-        cursor.execute("""
+
+        cursor.execute(
+            """
             SELECT COUNT(*) AS total
             FROM historico_publicacoes
-        """)
+            """
+        )
 
         resultado = cursor.fetchone()
 
@@ -217,6 +344,7 @@ def painel():
         )
 
     finally:
+
         cursor.close()
         conexao.close()
 
@@ -227,22 +355,26 @@ def painel():
     categorias = sorted(
         {
             produto["categoria"]
-            for produto
-            in oportunidades_ativas
-            if produto["categoria"]
+
+            for produto in todos_produtos
+
+            if produto.get(
+                "categoria"
+            )
         }
     )
 
     # =====================================================
-    # FILTROS
+    # APLICA FILTROS
     # =====================================================
 
     produtos_filtrados = (
         filtrar_produtos(
-            oportunidades_ativas,
-            busca,
-            categoria,
-            ordem,
+            produtos=todos_produtos,
+            busca=busca,
+            categoria=categoria,
+            status=status,
+            ordem=ordem,
         )
     )
 
@@ -281,13 +413,14 @@ def painel():
         ]
     )
 
+    # =====================================================
+    # TEMPLATE
+    # =====================================================
+
     return render_template(
         "painel.html",
 
         produtos=produtos,
-
-        fila_publicacao=
-            fila_publicacao,
 
         categorias=categorias,
 
@@ -295,6 +428,9 @@ def painel():
 
         categoria_selecionada=
             categoria,
+
+        status_selecionado=
+            status,
 
         ordem_selecionada=
             ordem,
@@ -328,7 +464,8 @@ def painel():
 @app.route(
     "/oportunidade/"
     "<int:oportunidade_id>/oferta",
-    methods=["POST"]
+
+    methods=["POST"],
 )
 def salvar_oferta(
     oportunidade_id
@@ -392,15 +529,17 @@ def salvar_oferta(
         )
 
     # =====================================================
-    # PREÇO
+    # PREÇO ATUAL
     # =====================================================
 
     try:
+
         preco = converter_preco(
             preco_texto
         )
 
     except ValueError:
+
         return (
             "Preço atual inválido.",
             400
@@ -416,13 +555,15 @@ def salvar_oferta(
         )
 
     # =====================================================
-    # PREÇO ORIGINAL
+    # PREÇO ANTERIOR
     # =====================================================
 
     preco_original = None
 
     if preco_original_texto:
+
         try:
+
             preco_original = (
                 converter_preco(
                     preco_original_texto
@@ -430,14 +571,24 @@ def salvar_oferta(
             )
 
         except ValueError:
+
             return (
                 "Preço anterior inválido.",
                 400
             )
 
         if preco_original <= 0:
+
             return (
                 "Preço anterior inválido.",
+                400
+            )
+
+        if preco_original <= preco:
+
+            return (
+                "O preço anterior deve "
+                "ser maior que o preço atual.",
                 400
             )
 
@@ -447,10 +598,8 @@ def salvar_oferta(
 
     desconto = None
 
-    if (
-        preco_original is not None
-        and preco_original > preco
-    ):
+    if preco_original is not None:
+
         desconto = round(
             (
                 (
@@ -460,7 +609,8 @@ def salvar_oferta(
                 / preco_original
             )
             * 100,
-            2
+
+            2,
         )
 
     # =====================================================
@@ -471,6 +621,7 @@ def salvar_oferta(
     cursor = conexao.cursor()
 
     try:
+
         cursor.execute(
             """
             UPDATE oportunidades
@@ -487,6 +638,7 @@ def salvar_oferta(
 
             WHERE id = %s
             """,
+
             (
                 link_produto,
                 preco,
@@ -500,15 +652,19 @@ def salvar_oferta(
         conexao.commit()
 
     except Exception:
+
         conexao.rollback()
         raise
 
     finally:
+
         cursor.close()
         conexao.close()
 
     return redirect(
-        url_for("painel")
+        url_for(
+            "painel"
+        )
     )
 
 
@@ -519,7 +675,8 @@ def salvar_oferta(
 @app.route(
     "/oportunidade/"
     "<int:oportunidade_id>/telegram",
-    methods=["POST"]
+
+    methods=["POST"],
 )
 def publicar_telegram(
     oportunidade_id
@@ -542,15 +699,248 @@ def publicar_telegram(
         )
 
     return redirect(
-        url_for("painel")
+        url_for(
+            "painel"
+        )
     )
 
 
 # =========================================================
-# INICIALIZAÇÃO
+# CRON — PUBLICAÇÃO
+# =========================================================
+
+@app.route(
+    "/tarefas/publicar",
+    methods=["POST"],
+)
+def tarefa_publicar():
+    """
+    Chamado pelo cron-job.org
+    aproximadamente a cada 5 minutos.
+
+    Publica no máximo uma promoção.
+    """
+
+    validar_cron()
+
+    # Evita duas publicações simultâneas
+    if not _lock_publicacao.acquire(
+        blocking=False
+    ):
+        return {
+            "ok": True,
+            "status": "ocupado",
+            "mensagem": (
+                "Já existe uma publicação "
+                "em andamento."
+            ),
+        }
+
+    try:
+
+        print()
+        print("=" * 70)
+        print(
+            "CRON - PUBLICAÇÃO AUTOMÁTICA"
+        )
+        print("=" * 70)
+
+        resultado = (
+            publicar_proxima_promocao()
+        )
+
+        if resultado.get(
+            "sucesso"
+        ):
+
+            return {
+                "ok": True,
+
+                "status":
+                    "publicado",
+
+                "produto":
+                    resultado.get(
+                        "nome"
+                    ),
+
+                "canal":
+                    resultado.get(
+                        "telegram_canal"
+                    ),
+            }
+
+        if resultado.get(
+            "fila_vazia"
+        ):
+
+            return {
+                "ok": True,
+
+                "status":
+                    "fila_vazia",
+
+                "mensagem":
+                    "Nenhuma promoção pronta.",
+            }
+
+        return {
+            "ok": False,
+
+            "status":
+                "erro",
+
+            "erro":
+                resultado.get(
+                    "erro",
+                    "Erro desconhecido."
+                ),
+        }
+
+    except Exception as erro:
+
+        print(
+            "Erro no cron de publicação:"
+        )
+
+        print(erro)
+
+        return {
+            "ok": False,
+            "status": "erro",
+            "erro": str(erro),
+        }, 500
+
+    finally:
+
+        _lock_publicacao.release()
+
+
+# =========================================================
+# CRON — COLETA
+# =========================================================
+
+def _executar_coleta_background():
+    """
+    Executa a coleta em segundo plano.
+
+    A rota HTTP pode responder rapidamente
+    ao cron-job.org enquanto a coleta continua.
+    """
+
+    try:
+
+        print()
+        print("=" * 70)
+        print(
+            "CRON - COLETA AUTOMÁTICA"
+        )
+        print("=" * 70)
+
+        executar_coleta()
+
+        print()
+        print(
+            "Coleta automática finalizada."
+        )
+
+    except Exception as erro:
+
+        print()
+        print(
+            "Erro na coleta automática:"
+        )
+
+        print(erro)
+
+    finally:
+
+        _lock_coleta.release()
+
+
+@app.route(
+    "/tarefas/coletar",
+    methods=["POST"],
+)
+def tarefa_coletar():
+    """
+    Chamado pelo cron-job.org
+    aproximadamente uma vez por hora.
+    """
+
+    validar_cron()
+
+    # Já existe uma coleta em andamento?
+    if not _lock_coleta.acquire(
+        blocking=False
+    ):
+
+        return {
+            "ok": True,
+
+            "status":
+                "ocupado",
+
+            "mensagem":
+                "Já existe uma coleta em andamento.",
+        }
+
+    try:
+
+        thread = threading.Thread(
+            target=
+                _executar_coleta_background,
+
+            daemon=True,
+
+            name=
+                "PromoConnColeta",
+        )
+
+        thread.start()
+
+    except Exception:
+
+        _lock_coleta.release()
+        raise
+
+    return {
+        "ok": True,
+
+        "status":
+            "iniciado",
+
+        "mensagem":
+            "Coleta iniciada em segundo plano.",
+    }
+
+
+# =========================================================
+# HEALTH CHECK
+# =========================================================
+
+@app.route(
+    "/health",
+    methods=["GET"],
+)
+def health():
+    """
+    Rota simples para conferir se o
+    Web Service está vivo.
+    """
+
+    return {
+        "ok": True,
+        "servico": "PromoConn",
+    }
+
+
+# =========================================================
+# EXECUÇÃO LOCAL
 # =========================================================
 
 if __name__ == "__main__":
+
     app.run(
         debug=True,
         host="0.0.0.0",
