@@ -1289,11 +1289,11 @@ def salvar_oferta(
         conexao.close()
 
     return redirect(
-        url_for(
-            "pagina_prontos"
+        request.referrer
+        or url_for(
+            "pagina_link"
         )
     )
-
 
 # =========================================================
 # PUBLICAÇÃO MANUAL
