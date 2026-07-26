@@ -1,7 +1,12 @@
+import hmac
 import math
 import os
 import threading
-import hmac
+from datetime import timedelta
+from functools import wraps
+from urllib.parse import urlsplit
+
+from dotenv import load_dotenv
 
 from flask import (
     Flask,
@@ -9,7 +14,23 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
+)
+
+from flask_wtf.csrf import (
+    CSRFError,
+    CSRFProtect,
+)
+
+from werkzeug.security import (
+    check_password_hash,
+)
+
+from coletor_worker import executar_coleta
+
+from database.canais_telegram import (
+    listar_canais,
 )
 
 from database.database import (
@@ -26,9 +47,12 @@ from services.publicador import (
     publicar_proxima_promocao,
 )
 
-from coletor_worker import (
-    executar_coleta,
-)
+
+# =========================================================
+# ENV
+# =========================================================
+
+load_dotenv()
 
 
 # =========================================================
@@ -37,24 +61,83 @@ from coletor_worker import (
 
 app = Flask(__name__)
 
-
 ITENS_POR_PAGINA = 20
 
 
 # =========================================================
-# CRON
+# SEGREDOS / CONFIGURAÇÃO
 # =========================================================
+
+SECRET_KEY = os.getenv(
+    "SECRET_KEY"
+)
+
+ADMIN_USER = os.getenv(
+    "ADMIN_USER"
+)
+
+ADMIN_PASSWORD_HASH = os.getenv(
+    "ADMIN_PASSWORD_HASH"
+)
 
 CRON_SECRET = os.getenv(
     "CRON_SECRET"
 )
 
 
-# Evita iniciar duas coletas ao mesmo tempo
+if not SECRET_KEY:
+    raise ValueError(
+        "SECRET_KEY não encontrada no ambiente."
+    )
+
+if not ADMIN_USER:
+    raise ValueError(
+        "ADMIN_USER não encontrada no ambiente."
+    )
+
+if not ADMIN_PASSWORD_HASH:
+    raise ValueError(
+        "ADMIN_PASSWORD_HASH não encontrada no ambiente."
+    )
+
+
+app.config.update(
+    SECRET_KEY=SECRET_KEY,
+
+    SESSION_COOKIE_HTTPONLY=True,
+
+    # No Render o site usa HTTPS.
+    # Para desenvolvimento local em http://127.0.0.1,
+    # deixamos False quando FLASK_ENV=development.
+    SESSION_COOKIE_SECURE=(
+        os.getenv(
+            "FLASK_ENV",
+            "production"
+        ).lower()
+        != "development"
+    ),
+
+    SESSION_COOKIE_SAMESITE="Lax",
+
+    PERMANENT_SESSION_LIFETIME=
+        timedelta(
+            hours=8
+        ),
+
+    WTF_CSRF_TIME_LIMIT=8 * 60 * 60,
+)
+
+
+csrf = CSRFProtect(
+    app
+)
+
+
+# =========================================================
+# LOCKS
+# =========================================================
+
 _lock_coleta = threading.Lock()
-
-
-# Evita duas publicações simultâneas
 _lock_publicacao = threading.Lock()
 
 
@@ -62,65 +145,236 @@ _lock_publicacao = threading.Lock()
 # BANCO
 # =========================================================
 
-# Importante:
-# gunicorn app:app não executa o bloco
-# if __name__ == "__main__".
-#
-# Por isso verificamos as tabelas aqui.
 criar_tabelas()
+
+
+# =========================================================
+# AUTENTICAÇÃO
+# =========================================================
+
+def esta_logado():
+    return bool(
+        session.get(
+            "autenticado"
+        )
+    )
+
+
+def login_obrigatorio(
+    funcao
+):
+    @wraps(funcao)
+    def wrapper(
+        *args,
+        **kwargs
+    ):
+        if not esta_logado():
+            return redirect(
+                url_for(
+                    "login",
+                    next=request.full_path,
+                )
+            )
+
+        return funcao(
+            *args,
+            **kwargs
+        )
+
+    return wrapper
+
+
+def destino_seguro(
+    destino
+):
+    """
+    Impede redirecionamento para domínio externo
+    após o login.
+    """
+
+    if not destino:
+        return None
+
+    partes = urlsplit(
+        destino
+    )
+
+    if partes.scheme or partes.netloc:
+        return None
+
+    if not destino.startswith("/"):
+        return None
+
+    return destino
+
+
+@app.route(
+    "/login",
+    methods=[
+        "GET",
+        "POST",
+    ],
+)
+def login():
+    if esta_logado():
+        return redirect(
+            url_for(
+                "painel"
+            )
+        )
+
+    erro = None
+
+    if request.method == "POST":
+        usuario = (
+            request.form.get(
+                "usuario",
+                ""
+            ).strip()
+        )
+
+        senha = (
+            request.form.get(
+                "senha",
+                ""
+            )
+        )
+
+        usuario_correto = (
+            hmac.compare_digest(
+                usuario,
+                ADMIN_USER
+            )
+        )
+
+        senha_correta = (
+            check_password_hash(
+                ADMIN_PASSWORD_HASH,
+                senha,
+            )
+        )
+
+        if (
+            usuario_correto
+            and senha_correta
+        ):
+            session.clear()
+
+            session[
+                "autenticado"
+            ] = True
+
+            session[
+                "usuario"
+            ] = ADMIN_USER
+
+            session.permanent = True
+
+            destino = (
+                destino_seguro(
+                    request.form.get(
+                        "next"
+                    )
+                )
+            )
+
+            return redirect(
+                destino
+                or url_for(
+                    "painel"
+                )
+            )
+
+        erro = (
+            "Usuário ou senha inválidos."
+        )
+
+    return render_template(
+        "login.html",
+        erro=erro,
+        next_url=(
+            destino_seguro(
+                request.args.get(
+                    "next"
+                )
+            )
+            or ""
+        ),
+    )
+
+
+@app.route(
+    "/sair",
+    methods=["POST"],
+)
+@login_obrigatorio
+def sair():
+    session.clear()
+
+    return redirect(
+        url_for(
+            "login"
+        )
+    )
 
 
 # =========================================================
 # AUXILIARES
 # =========================================================
 
-def converter_preco(texto):
+def converter_preco(
+    texto
+):
     if not texto:
         return None
 
     texto = (
         texto
-        .replace("R$", "")
+        .replace(
+            "R$",
+            ""
+        )
         .strip()
     )
-
-    # Exemplo:
-    #
-    # R$ 1.299,90
-    # ↓
-    # 1299.90
 
     if "," in texto:
         texto = (
             texto
-            .replace(".", "")
-            .replace(",", ".")
+            .replace(
+                ".",
+                ""
+            )
+            .replace(
+                ",",
+                "."
+            )
         )
 
-    return float(texto)
+    return float(
+        texto
+    )
 
 
 def filtrar_produtos(
     produtos,
-    busca,
-    categoria,
-    status,
-    ordem,
+    busca="",
+    categoria="",
+    status="",
+    ordem="score",
 ):
     resultado = list(
         produtos
     )
 
-    # =====================================================
-    # PESQUISA
-    # =====================================================
-
     if busca:
-        termo = busca.lower()
+        termo = (
+            busca.lower()
+        )
 
         resultado = [
             produto
-            for produto in resultado
+            for produto
+            in resultado
 
             if termo
             in produto.get(
@@ -129,14 +383,11 @@ def filtrar_produtos(
             ).lower()
         ]
 
-    # =====================================================
-    # CATEGORIA
-    # =====================================================
-
     if categoria:
         resultado = [
             produto
-            for produto in resultado
+            for produto
+            in resultado
 
             if produto.get(
                 "categoria"
@@ -144,14 +395,11 @@ def filtrar_produtos(
             == categoria
         ]
 
-    # =====================================================
-    # STATUS
-    # =====================================================
-
     if status:
         resultado = [
             produto
-            for produto in resultado
+            for produto
+            in resultado
 
             if produto.get(
                 "status"
@@ -159,12 +407,7 @@ def filtrar_produtos(
             == status
         ]
 
-    # =====================================================
-    # ORDENAÇÃO
-    # =====================================================
-
     if ordem == "ranking":
-
         resultado.sort(
             key=lambda produto: (
                 produto.get(
@@ -181,7 +424,6 @@ def filtrar_produtos(
         )
 
     elif ordem == "nome":
-
         resultado.sort(
             key=lambda produto:
                 produto.get(
@@ -191,19 +433,141 @@ def filtrar_produtos(
         )
 
     else:
-
-        # Maior score primeiro
         resultado.sort(
             key=lambda produto:
                 produto.get(
                     "pontuacao",
                     0
                 ),
-
             reverse=True,
         )
 
     return resultado
+
+
+def paginar_lista(
+    itens,
+    pagina,
+    por_pagina=
+        ITENS_POR_PAGINA,
+):
+    total_itens = len(
+        itens
+    )
+
+    total_paginas = max(
+        1,
+
+        math.ceil(
+            total_itens
+            / por_pagina
+        )
+    )
+
+    pagina = max(
+        1,
+
+        min(
+            pagina,
+            total_paginas
+        )
+    )
+
+    inicio = (
+        (pagina - 1)
+        * por_pagina
+    )
+
+    fim = (
+        inicio
+        + por_pagina
+    )
+
+    return (
+        itens[
+            inicio:fim
+        ],
+
+        pagina,
+
+        total_paginas,
+
+        total_itens,
+    )
+
+
+def obter_metricas(
+    produtos=None
+):
+    if produtos is None:
+        produtos = (
+            calcular_oportunidades(
+                limite=None
+            )
+        )
+
+    total_oportunidades = len(
+        produtos
+    )
+
+    total_aguardando = sum(
+        1
+        for produto
+        in produtos
+
+        if produto.get(
+            "status"
+        )
+        == "aguardando_link"
+    )
+
+    total_prontos = sum(
+        1
+        for produto
+        in produtos
+
+        if produto.get(
+            "status"
+        )
+        == "pronto_publicar"
+    )
+
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total
+            FROM historico_publicacoes
+            """
+        )
+
+        resultado = (
+            cursor.fetchone()
+        )
+
+        total_publicados = (
+            resultado["total"]
+        )
+
+    finally:
+        cursor.close()
+        conexao.close()
+
+    return {
+        "total_oportunidades":
+            total_oportunidades,
+
+        "total_aguardando":
+            total_aguardando,
+
+        "total_prontos":
+            total_prontos,
+
+        "total_publicados":
+            total_publicados,
+    }
 
 
 # =========================================================
@@ -211,20 +575,7 @@ def filtrar_produtos(
 # =========================================================
 
 def validar_cron():
-    """
-    Valida o header enviado pelo cron-job.org.
-
-    Header esperado:
-
-    X-Cron-Secret: SUA_CHAVE
-    """
-
     if not CRON_SECRET:
-        print(
-            "ERRO: CRON_SECRET "
-            "não configurado."
-        )
-
         abort(500)
 
     token_recebido = (
@@ -242,10 +593,11 @@ def validar_cron():
 
 
 # =========================================================
-# PAINEL
+# DASHBOARD
 # =========================================================
 
 @app.route("/")
+@login_obrigatorio
 def painel():
     todos_produtos = (
         calcular_oportunidades(
@@ -253,29 +605,57 @@ def painel():
         )
     )
 
-    # =====================================================
-    # FILTROS RECEBIDOS
-    # =====================================================
+    metricas = obter_metricas(
+        todos_produtos
+    )
 
-    busca = request.args.get(
-        "busca",
-        ""
-    ).strip()
+    fila_publicacao = [
+        produto
+        for produto
+        in todos_produtos
 
-    categoria = request.args.get(
-        "categoria",
-        ""
-    ).strip()
+        if produto.get(
+            "status"
+        )
+        == "pronto_publicar"
+    ]
 
-    status = request.args.get(
-        "status",
-        ""
-    ).strip()
+    fila_publicacao.sort(
+        key=lambda produto:
+            produto.get(
+                "pontuacao",
+                0
+            ),
+        reverse=True,
+    )
 
-    ordem = request.args.get(
-        "ordem",
-        "score"
-    ).strip()
+    busca = (
+        request.args.get(
+            "busca",
+            ""
+        ).strip()
+    )
+
+    categoria = (
+        request.args.get(
+            "categoria",
+            ""
+        ).strip()
+    )
+
+    status = (
+        request.args.get(
+            "status",
+            ""
+        ).strip()
+    )
+
+    ordem = (
+        request.args.get(
+            "ordem",
+            "score"
+        ).strip()
+    )
 
     try:
         pagina = int(
@@ -288,75 +668,14 @@ def painel():
     except ValueError:
         pagina = 1
 
-    pagina = max(
-        pagina,
-        1
-    )
-
-    # =====================================================
-    # MÉTRICAS
-    # =====================================================
-
-    total_oportunidades = len(
-        todos_produtos
-    )
-
-    total_aguardando = sum(
-        1
-        for produto in todos_produtos
-
-        if produto.get(
-            "status"
-        )
-        == "aguardando_link"
-    )
-
-    total_prontos = sum(
-        1
-        for produto in todos_produtos
-
-        if produto.get(
-            "status"
-        )
-        == "pronto_publicar"
-    )
-
-    # =====================================================
-    # TOTAL PUBLICADOS
-    # =====================================================
-
-    conexao = conectar()
-    cursor = conexao.cursor()
-
-    try:
-
-        cursor.execute(
-            """
-            SELECT COUNT(*) AS total
-            FROM historico_publicacoes
-            """
-        )
-
-        resultado = cursor.fetchone()
-
-        total_publicados = (
-            resultado["total"]
-        )
-
-    finally:
-
-        cursor.close()
-        conexao.close()
-
-    # =====================================================
-    # CATEGORIAS
-    # =====================================================
-
     categorias = sorted(
         {
-            produto["categoria"]
+            produto[
+                "categoria"
+            ]
 
-            for produto in todos_produtos
+            for produto
+            in todos_produtos
 
             if produto.get(
                 "categoria"
@@ -364,65 +683,44 @@ def painel():
         }
     )
 
-    # =====================================================
-    # APLICA FILTROS
-    # =====================================================
-
     produtos_filtrados = (
         filtrar_produtos(
-            produtos=todos_produtos,
+            todos_produtos,
+
             busca=busca,
-            categoria=categoria,
+
+            categoria=
+                categoria,
+
             status=status,
+
             ordem=ordem,
         )
     )
 
-    total_filtrado = len(
-        produtos_filtrados
+    (
+        produtos,
+        pagina,
+        total_paginas,
+        total_filtrado,
+    ) = paginar_lista(
+        produtos_filtrados,
+        pagina,
     )
-
-    # =====================================================
-    # PAGINAÇÃO
-    # =====================================================
-
-    total_paginas = max(
-        1,
-        math.ceil(
-            total_filtrado
-            / ITENS_POR_PAGINA
-        )
-    )
-
-    if pagina > total_paginas:
-        pagina = total_paginas
-
-    inicio = (
-        (pagina - 1)
-        * ITENS_POR_PAGINA
-    )
-
-    fim = (
-        inicio
-        + ITENS_POR_PAGINA
-    )
-
-    produtos = (
-        produtos_filtrados[
-            inicio:fim
-        ]
-    )
-
-    # =====================================================
-    # TEMPLATE
-    # =====================================================
 
     return render_template(
         "painel.html",
 
+        pagina_ativa=
+            "dashboard",
+
         produtos=produtos,
 
-        categorias=categorias,
+        fila_publicacao=
+            fila_publicacao,
+
+        categorias=
+            categorias,
 
         busca=busca,
 
@@ -443,17 +741,380 @@ def painel():
         total_filtrado=
             total_filtrado,
 
-        total_oportunidades=
-            total_oportunidades,
+        **metricas,
+    )
 
-        total_aguardando=
-            total_aguardando,
 
-        total_prontos=
-            total_prontos,
+# =========================================================
+# AGUARDANDO LINK
+# =========================================================
 
-        total_publicados=
-            total_publicados,
+@app.route(
+    "/link"
+)
+@login_obrigatorio
+def pagina_link():
+    todos_produtos = (
+        calcular_oportunidades(
+            limite=None
+        )
+    )
+
+    metricas = obter_metricas(
+        todos_produtos
+    )
+
+    aguardando = [
+        produto
+        for produto
+        in todos_produtos
+
+        if produto.get(
+            "status"
+        )
+        == "aguardando_link"
+    ]
+
+    busca = (
+        request.args.get(
+            "busca",
+            ""
+        ).strip()
+    )
+
+    categoria = (
+        request.args.get(
+            "categoria",
+            ""
+        ).strip()
+    )
+
+    ordem = (
+        request.args.get(
+            "ordem",
+            "score"
+        ).strip()
+    )
+
+    try:
+        pagina = int(
+            request.args.get(
+                "pagina",
+                1
+            )
+        )
+
+    except ValueError:
+        pagina = 1
+
+    categorias = sorted(
+        {
+            produto[
+                "categoria"
+            ]
+
+            for produto
+            in aguardando
+
+            if produto.get(
+                "categoria"
+            )
+        }
+    )
+
+    produtos_filtrados = (
+        filtrar_produtos(
+            aguardando,
+
+            busca=busca,
+
+            categoria=
+                categoria,
+
+            ordem=ordem,
+        )
+    )
+
+    (
+        produtos,
+        pagina,
+        total_paginas,
+        total_filtrado,
+    ) = paginar_lista(
+        produtos_filtrados,
+        pagina,
+    )
+
+    return render_template(
+        "link.html",
+
+        pagina_ativa=
+            "link",
+
+        produtos=produtos,
+
+        categorias=
+            categorias,
+
+        busca=busca,
+
+        categoria_selecionada=
+            categoria,
+
+        ordem_selecionada=
+            ordem,
+
+        pagina=pagina,
+
+        total_paginas=
+            total_paginas,
+
+        total_filtrado=
+            total_filtrado,
+
+        **metricas,
+    )
+
+
+# =========================================================
+# PRONTOS
+# =========================================================
+
+@app.route(
+    "/prontos"
+)
+@login_obrigatorio
+def pagina_prontos():
+    todos_produtos = (
+        calcular_oportunidades(
+            limite=None
+        )
+    )
+
+    metricas = obter_metricas(
+        todos_produtos
+    )
+
+    prontos = [
+        produto
+        for produto
+        in todos_produtos
+
+        if produto.get(
+            "status"
+        )
+        == "pronto_publicar"
+    ]
+
+    prontos.sort(
+        key=lambda produto:
+            produto.get(
+                "pontuacao",
+                0
+            ),
+        reverse=True,
+    )
+
+    return render_template(
+        "prontos.html",
+
+        pagina_ativa=
+            "prontos",
+
+        produtos=prontos,
+
+        **metricas,
+    )
+
+
+# =========================================================
+# PUBLICADOS
+# =========================================================
+
+@app.route(
+    "/publicados"
+)
+@login_obrigatorio
+def pagina_publicados():
+    metricas = (
+        obter_metricas()
+    )
+
+    busca = (
+        request.args.get(
+            "busca",
+            ""
+        ).strip()
+    )
+
+    categoria = (
+        request.args.get(
+            "categoria",
+            ""
+        ).strip()
+    )
+
+    try:
+        pagina = int(
+            request.args.get(
+                "pagina",
+                1
+            )
+        )
+
+    except ValueError:
+        pagina = 1
+
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                id,
+                ml_id,
+                tipo,
+                nome,
+                imagem,
+                categoria,
+                ranking,
+                link_produto,
+                link_afiliado,
+                preco,
+                preco_original,
+                desconto,
+                telegram_message_id,
+                telegram_canal,
+                telegram_chat_id,
+                publicado_em
+
+            FROM historico_publicacoes
+
+            ORDER BY
+                publicado_em DESC
+            """
+        )
+
+        publicados = (
+            cursor.fetchall()
+        )
+
+    finally:
+        cursor.close()
+        conexao.close()
+
+    categorias = sorted(
+        {
+            item[
+                "categoria"
+            ]
+
+            for item
+            in publicados
+
+            if item.get(
+                "categoria"
+            )
+        }
+    )
+
+    if busca:
+        termo = (
+            busca.lower()
+        )
+
+        publicados = [
+            item
+            for item
+            in publicados
+
+            if termo
+            in item.get(
+                "nome",
+                ""
+            ).lower()
+        ]
+
+    if categoria:
+        publicados = [
+            item
+            for item
+            in publicados
+
+            if item.get(
+                "categoria"
+            )
+            == categoria
+        ]
+
+    (
+        publicados_pagina,
+        pagina,
+        total_paginas,
+        total_filtrado,
+    ) = paginar_lista(
+        publicados,
+        pagina,
+    )
+
+    return render_template(
+        "publicados.html",
+
+        pagina_ativa=
+            "publicados",
+
+        publicados=
+            publicados_pagina,
+
+        categorias=
+            categorias,
+
+        busca=busca,
+
+        categoria_selecionada=
+            categoria,
+
+        pagina=pagina,
+
+        total_paginas=
+            total_paginas,
+
+        total_filtrado=
+            total_filtrado,
+
+        **metricas,
+    )
+
+
+# =========================================================
+# CANAIS
+# =========================================================
+
+@app.route(
+    "/canais"
+)
+@login_obrigatorio
+def pagina_canais():
+    metricas = (
+        obter_metricas()
+    )
+
+    canais = (
+        listar_canais(
+            apenas_ativos=False
+        )
+    )
+
+    return render_template(
+        "canais.html",
+
+        pagina_ativa=
+            "canais",
+
+        canais=canais,
+
+        **metricas,
     )
 
 
@@ -467,6 +1128,7 @@ def painel():
 
     methods=["POST"],
 )
+@login_obrigatorio
 def salvar_oferta(
     oportunidade_id
 ):
@@ -498,10 +1160,6 @@ def salvar_oferta(
         ).strip()
     )
 
-    # =====================================================
-    # LINK DO PRODUTO
-    # =====================================================
-
     if not link_produto.startswith(
         (
             "https://www.mercadolivre.com.br/",
@@ -512,10 +1170,6 @@ def salvar_oferta(
             "Link do produto inválido.",
             400
         )
-
-    # =====================================================
-    # LINK AFILIADO
-    # =====================================================
 
     if not link_afiliado.startswith(
         (
@@ -528,18 +1182,12 @@ def salvar_oferta(
             400
         )
 
-    # =====================================================
-    # PREÇO ATUAL
-    # =====================================================
-
     try:
-
         preco = converter_preco(
             preco_texto
         )
 
     except ValueError:
-
         return (
             "Preço atual inválido.",
             400
@@ -554,16 +1202,10 @@ def salvar_oferta(
             400
         )
 
-    # =====================================================
-    # PREÇO ANTERIOR
-    # =====================================================
-
     preco_original = None
 
     if preco_original_texto:
-
         try:
-
             preco_original = (
                 converter_preco(
                     preco_original_texto
@@ -571,35 +1213,27 @@ def salvar_oferta(
             )
 
         except ValueError:
-
             return (
                 "Preço anterior inválido.",
                 400
             )
 
         if preco_original <= 0:
-
             return (
                 "Preço anterior inválido.",
                 400
             )
 
         if preco_original <= preco:
-
             return (
                 "O preço anterior deve "
                 "ser maior que o preço atual.",
                 400
             )
 
-    # =====================================================
-    # DESCONTO
-    # =====================================================
-
     desconto = None
 
     if preco_original is not None:
-
         desconto = round(
             (
                 (
@@ -613,15 +1247,10 @@ def salvar_oferta(
             2,
         )
 
-    # =====================================================
-    # BANCO
-    # =====================================================
-
     conexao = conectar()
     cursor = conexao.cursor()
 
     try:
-
         cursor.execute(
             """
             UPDATE oportunidades
@@ -652,18 +1281,16 @@ def salvar_oferta(
         conexao.commit()
 
     except Exception:
-
         conexao.rollback()
         raise
 
     finally:
-
         cursor.close()
         conexao.close()
 
     return redirect(
         url_for(
-            "painel"
+            "pagina_prontos"
         )
     )
 
@@ -678,6 +1305,7 @@ def salvar_oferta(
 
     methods=["POST"],
 )
+@login_obrigatorio
 def publicar_telegram(
     oportunidade_id
 ):
@@ -699,8 +1327,9 @@ def publicar_telegram(
         )
 
     return redirect(
-        url_for(
-            "painel"
+        request.referrer
+        or url_for(
+            "pagina_prontos"
         )
     )
 
@@ -713,17 +1342,10 @@ def publicar_telegram(
     "/tarefas/publicar",
     methods=["POST"],
 )
+@csrf.exempt
 def tarefa_publicar():
-    """
-    Chamado pelo cron-job.org
-    aproximadamente a cada 5 minutos.
-
-    Publica no máximo uma promoção.
-    """
-
     validar_cron()
 
-    # Evita duas publicações simultâneas
     if not _lock_publicacao.acquire(
         blocking=False
     ):
@@ -737,14 +1359,6 @@ def tarefa_publicar():
         }
 
     try:
-
-        print()
-        print("=" * 70)
-        print(
-            "CRON - PUBLICAÇÃO AUTOMÁTICA"
-        )
-        print("=" * 70)
-
         resultado = (
             publicar_proxima_promocao()
         )
@@ -752,12 +1366,9 @@ def tarefa_publicar():
         if resultado.get(
             "sucesso"
         ):
-
             return {
                 "ok": True,
-
-                "status":
-                    "publicado",
+                "status": "publicado",
 
                 "produto":
                     resultado.get(
@@ -773,22 +1384,16 @@ def tarefa_publicar():
         if resultado.get(
             "fila_vazia"
         ):
-
             return {
                 "ok": True,
-
-                "status":
-                    "fila_vazia",
-
+                "status": "fila_vazia",
                 "mensagem":
                     "Nenhuma promoção pronta.",
             }
 
         return {
             "ok": False,
-
-            "status":
-                "erro",
+            "status": "erro",
 
             "erro":
                 resultado.get(
@@ -798,21 +1403,15 @@ def tarefa_publicar():
         }
 
     except Exception as erro:
-
-        print(
-            "Erro no cron de publicação:"
-        )
-
-        print(erro)
-
         return {
             "ok": False,
             "status": "erro",
-            "erro": str(erro),
+            "erro": str(
+                erro
+            ),
         }, 500
 
     finally:
-
         _lock_publicacao.release()
 
 
@@ -821,40 +1420,19 @@ def tarefa_publicar():
 # =========================================================
 
 def _executar_coleta_background():
-    """
-    Executa a coleta em segundo plano.
-
-    A rota HTTP pode responder rapidamente
-    ao cron-job.org enquanto a coleta continua.
-    """
-
     try:
-
-        print()
-        print("=" * 70)
-        print(
-            "CRON - COLETA AUTOMÁTICA"
-        )
-        print("=" * 70)
-
         executar_coleta()
 
-        print()
-        print(
-            "Coleta automática finalizada."
-        )
-
     except Exception as erro:
-
-        print()
         print(
             "Erro na coleta automática:"
         )
 
-        print(erro)
+        print(
+            erro
+        )
 
     finally:
-
         _lock_coleta.release()
 
 
@@ -862,31 +1440,23 @@ def _executar_coleta_background():
     "/tarefas/coletar",
     methods=["POST"],
 )
+@csrf.exempt
 def tarefa_coletar():
-    """
-    Chamado pelo cron-job.org
-    aproximadamente uma vez por hora.
-    """
-
     validar_cron()
 
-    # Já existe uma coleta em andamento?
     if not _lock_coleta.acquire(
         blocking=False
     ):
-
         return {
             "ok": True,
-
-            "status":
-                "ocupado",
-
-            "mensagem":
-                "Já existe uma coleta em andamento.",
+            "status": "ocupado",
+            "mensagem": (
+                "Já existe uma coleta "
+                "em andamento."
+            ),
         }
 
     try:
-
         thread = threading.Thread(
             target=
                 _executar_coleta_background,
@@ -900,35 +1470,27 @@ def tarefa_coletar():
         thread.start()
 
     except Exception:
-
         _lock_coleta.release()
         raise
 
     return {
         "ok": True,
-
-        "status":
-            "iniciado",
-
-        "mensagem":
-            "Coleta iniciada em segundo plano.",
+        "status": "iniciado",
+        "mensagem": (
+            "Coleta iniciada "
+            "em segundo plano."
+        ),
     }
 
 
 # =========================================================
-# HEALTH CHECK
+# HEALTH
 # =========================================================
 
 @app.route(
-    "/health",
-    methods=["GET"],
+    "/health"
 )
 def health():
-    """
-    Rota simples para conferir se o
-    Web Service está vivo.
-    """
-
     return {
         "ok": True,
         "servico": "PromoConn",
@@ -936,11 +1498,74 @@ def health():
 
 
 # =========================================================
-# EXECUÇÃO LOCAL
+# ERROS CSRF
+# =========================================================
+
+@app.errorhandler(
+    CSRFError
+)
+def erro_csrf(
+    erro
+):
+    if esta_logado():
+        return (
+            render_template(
+                "erro.html",
+
+                titulo=
+                    "Sessão expirada",
+
+                mensagem=(
+                    "Atualize a página "
+                    "e tente novamente."
+                ),
+            ),
+            400,
+        )
+
+    return redirect(
+        url_for(
+            "login"
+        )
+    )
+
+
+# =========================================================
+# HEADERS DE SEGURANÇA
+# =========================================================
+
+@app.after_request
+def headers_seguranca(
+    resposta
+):
+    resposta.headers[
+        "X-Content-Type-Options"
+    ] = "nosniff"
+
+    resposta.headers[
+        "X-Frame-Options"
+    ] = "DENY"
+
+    resposta.headers[
+        "Referrer-Policy"
+    ] = "strict-origin-when-cross-origin"
+
+    resposta.headers[
+        "Permissions-Policy"
+    ] = (
+        "camera=(), "
+        "microphone=(), "
+        "geolocation=()"
+    )
+
+    return resposta
+
+
+# =========================================================
+# LOCAL
 # =========================================================
 
 if __name__ == "__main__":
-
     app.run(
         debug=True,
         host="0.0.0.0",
