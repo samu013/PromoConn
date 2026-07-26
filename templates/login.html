@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>PromoConn - Login</title>
+
+    <link
+        rel="icon"
+        type="image/png"
+        href="{{ url_for('static', filename='img/favicon.png') }}"
+    >
+
+    <style>
+        * {
+            box-sizing:
+                border-box;
+        }
+
+        :root {
+            --azul:
+                #0a62c7;
+
+            --azul-escuro:
+                #06316d;
+
+            --verde:
+                #22b754;
+
+            --texto:
+                #12213f;
+
+            --cinza:
+                #69758a;
+
+            --borda:
+                #dfe5ee;
+        }
+
+        body {
+            margin:
+                0;
+
+            min-height:
+                100vh;
+
+            display:
+                grid;
+
+            place-items:
+                center;
+
+            padding:
+                24px;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #eef4fb,
+                    #f7f9fc
+                );
+
+            color:
+                var(--texto);
+        }
+
+        .login {
+            width:
+                min(
+                    420px,
+                    100%
+                );
+
+            overflow:
+                hidden;
+
+            border:
+                1px solid
+                var(--borda);
+
+            border-radius:
+                16px;
+
+            background:
+                white;
+
+            box-shadow:
+                0 18px 55px
+                rgba(
+                    16,
+                    42,
+                    82,
+                    0.14
+                );
+        }
+
+        .login-topo {
+            padding:
+                26px 30px 18px;
+
+            text-align:
+                center;
+        }
+
+        .login-topo img {
+            width:
+                300px;
+
+            max-width:
+                100%;
+
+            max-height:
+                120px;
+
+            object-fit:
+                contain;
+        }
+
+        .linha {
+            height:
+                4px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    var(--verde),
+                    var(--azul)
+                );
+        }
+
+        .login-corpo {
+            padding:
+                24px 30px 30px;
+        }
+
+        h1 {
+            margin:
+                0;
+
+            color:
+                var(--azul-escuro);
+
+            font-size:
+                22px;
+        }
+
+        .descricao {
+            margin:
+                7px 0 22px;
+
+            color:
+                var(--cinza);
+
+            font-size:
+                13px;
+
+            line-height:
+                1.5;
+        }
+
+        label {
+            display:
+                block;
+
+            margin:
+                13px 0 6px;
+
+            color:
+                #43506a;
+
+            font-size:
+                12px;
+
+            font-weight:
+                bold;
+        }
+
+        input {
+            width:
+                100%;
+
+            min-height:
+                44px;
+
+            padding:
+                0 12px;
+
+            border:
+                1px solid
+                #cdd6e3;
+
+            border-radius:
+                8px;
+
+            outline:
+                none;
+
+            font-size:
+                14px;
+        }
+
+        input:focus {
+            border-color:
+                var(--azul);
+
+            box-shadow:
+                0 0 0 3px
+                rgba(
+                    10,
+                    98,
+                    199,
+                    0.10
+                );
+        }
+
+        button {
+            width:
+                100%;
+
+            min-height:
+                44px;
+
+            margin-top:
+                20px;
+
+            border:
+                0;
+
+            border-radius:
+                8px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--azul),
+                    #1677db
+                );
+
+            color:
+                white;
+
+            cursor:
+                pointer;
+
+            font-size:
+                14px;
+
+            font-weight:
+                800;
+        }
+
+        button:hover {
+            filter:
+                brightness(
+                    1.04
+                );
+        }
+
+        .erro {
+            margin-bottom:
+                14px;
+
+            padding:
+                10px 12px;
+
+            border:
+                1px solid
+                #ffc9c9;
+
+            border-radius:
+                8px;
+
+            background:
+                #fff0f0;
+
+            color:
+                #a61b1b;
+
+            font-size:
+                13px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="login">
+
+    <div class="login-topo">
+
+        <img
+            src="{{ url_for('static', filename='img/logo-promoconn.png') }}"
+            alt="PromoConn"
+        >
+
+    </div>
+
+    <div class="linha"></div>
+
+    <div class="login-corpo">
+
+        <h1>
+            Acesso administrativo
+        </h1>
+
+        <p class="descricao">
+            Entre para acessar o painel
+            e gerenciar as promoções.
+        </p>
+
+        {% if erro %}
+
+            <div class="erro">
+                {{ erro }}
+            </div>
+
+        {% endif %}
+
+        <form
+            method="POST"
+            autocomplete="off"
+        >
+
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+            <input
+                type="hidden"
+                name="next"
+                value="{{ next_url }}"
+            >
+
+            <label for="usuario">
+                Usuário
+            </label>
+
+            <input
+                id="usuario"
+                type="text"
+                name="usuario"
+                autocomplete="username"
+                required
+                autofocus
+            >
+
+            <label for="senha">
+                Senha
+            </label>
+
+            <input
+                id="senha"
+                type="password"
+                name="senha"
+                autocomplete="current-password"
+                required
+            >
+
+            <button type="submit">
+                Entrar
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

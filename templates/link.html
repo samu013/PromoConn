@@ -1,0 +1,618 @@
+{% extends "base.html" %}
+
+{% block title %}
+PromoConn - Aguardando Link
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-oferta {
+        margin-top: 14px;
+        padding-top: 13px;
+        border-top: 1px solid var(--borda);
+    }
+
+    .form-oferta label {
+        display: block;
+        margin: 9px 0 5px;
+        color: var(--cinza-texto);
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .form-oferta input {
+        width: 100%;
+        padding: 10px 11px;
+        border: 1px solid #ccd5e3;
+        border-radius: 9px;
+        outline: none;
+        font-size: 14px;
+    }
+
+    .form-oferta input:focus {
+        border-color: var(--azul-claro);
+        box-shadow:
+            0 0 0 3px
+            rgba(13, 156, 255, 0.10);
+    }
+
+    .input-moeda {
+        background: #f8fbff;
+        color: var(--azul-escuro);
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<section class="cabecalho-pagina">
+    <div>
+        <h2>
+            Aguardando link
+        </h2>
+
+        <p>
+            Produtos que ainda precisam de preço
+            e link de afiliado.
+        </p>
+    </div>
+</section>
+
+<details class="expander">
+
+    <summary>
+
+        <span class="expander-titulo">
+            Filtros
+
+            <span class="expander-contador">
+                {{ total_filtrado }}
+            </span>
+        </span>
+
+        <span class="expander-seta">
+            ▼
+        </span>
+
+    </summary>
+
+    <div class="expander-conteudo">
+
+        <form
+            method="GET"
+            action="{{ url_for('pagina_link') }}"
+        >
+
+            <div class="filtros-grid">
+
+                <div class="campo">
+
+                    <label>
+                        Produto
+                    </label>
+
+                    <input
+                        type="text"
+                        name="busca"
+                        value="{{ busca }}"
+                        placeholder="Pesquisar produto..."
+                    >
+
+                </div>
+
+                <div class="campo">
+
+                    <label>
+                        Categoria
+                    </label>
+
+                    <select name="categoria">
+
+                        <option value="">
+                            Todas
+                        </option>
+
+                        {% for categoria in categorias %}
+
+                            <option
+                                value="{{ categoria }}"
+
+                                {% if
+                                    categoria
+                                    == categoria_selecionada
+                                %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ categoria }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+                <div class="campo">
+
+                    <label>
+                        Ordenação
+                    </label>
+
+                    <select name="ordem">
+
+                        <option
+                            value="score"
+
+                            {% if
+                                ordem_selecionada
+                                == "score"
+                            %}
+                                selected
+                            {% endif %}
+                        >
+                            Maior score
+                        </option>
+
+                        <option
+                            value="ranking"
+
+                            {% if
+                                ordem_selecionada
+                                == "ranking"
+                            %}
+                                selected
+                            {% endif %}
+                        >
+                            Melhor ranking
+                        </option>
+
+                        <option
+                            value="nome"
+
+                            {% if
+                                ordem_selecionada
+                                == "nome"
+                            %}
+                                selected
+                            {% endif %}
+                        >
+                            Nome A-Z
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+            <div class="filtros-acoes">
+
+                <a
+                    href="{{ url_for('pagina_link') }}"
+                    class="
+                        botao
+                        botao-secundario
+                    "
+                >
+                    Limpar
+                </a>
+
+                <button
+                    type="submit"
+                    class="
+                        botao
+                        botao-primario
+                    "
+                >
+                    Aplicar
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</details>
+
+<div class="secao-titulo">
+
+    <h3>
+        Produtos para preparar
+    </h3>
+
+    <span>
+        {{ total_filtrado }}
+        produto(s)
+    </span>
+
+</div>
+
+<div class="produtos-grid">
+
+    {% for produto in produtos %}
+
+        <article class="produto">
+
+            <div class="imagem-box">
+
+                {% if produto.imagem %}
+
+                    <img
+                        src="{{ produto.imagem }}"
+                        alt="{{ produto.nome }}"
+                    >
+
+                {% else %}
+
+                    📦 Sem imagem
+
+                {% endif %}
+
+            </div>
+
+            <div class="produto-conteudo">
+
+                <div class="badges">
+
+                    <span class="badge badge-score">
+                        {{ produto.pontuacao }}
+                    </span>
+
+                    <span class="badge badge-ranking">
+                        #{{ produto.ranking or "-" }}
+                    </span>
+
+                    <span class="badge badge-aguardando">
+                        Aguardando
+                    </span>
+
+                </div>
+
+                <h3>
+                    {{ produto.nome }}
+                </h3>
+
+                <div class="categoria">
+
+                    {{
+                        produto.categoria
+                        or "Sem categoria"
+                    }}
+
+                    ·
+
+                    {{ produto.tipo }}
+
+                </div>
+
+                {% if produto.link_produto %}
+
+                    <a
+                        href="{{ produto.link_produto }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="
+                            botao
+                            botao-produto
+                        "
+                    >
+                        Abrir no Mercado Livre
+                    </a>
+
+                    <form
+                        class="form-oferta"
+                        method="POST"
+
+                        action="{{
+                            url_for(
+                                'salvar_oferta',
+                                oportunidade_id=
+                                    produto.id
+                            )
+                        }}"
+                    >
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+
+                        <input
+                            type="hidden"
+                            name="link_produto"
+                            value="{{ produto.link_produto }}"
+                        >
+
+                        <label>
+                            Preço atual
+                        </label>
+
+                        <input
+                            type="text"
+                            name="preco"
+                            class="input-moeda"
+                            placeholder="R$ 0,00"
+                            inputmode="numeric"
+                            autocomplete="off"
+                            required
+                        >
+
+                        <label>
+                            Preço anterior
+                        </label>
+
+                        <input
+                            type="text"
+                            name="preco_original"
+                            class="input-moeda"
+                            placeholder="R$ 0,00"
+                            inputmode="numeric"
+                            autocomplete="off"
+                        >
+
+                        <label>
+                            Link de afiliado
+                        </label>
+
+                        <input
+                            type="url"
+                            name="link_afiliado"
+                            placeholder="https://meli.la/..."
+                            autocomplete="off"
+                            required
+                        >
+
+                        <button
+                            type="submit"
+                            class="
+                                botao
+                                botao-primario
+                            "
+                            style="width: 100%; margin-top: 12px;"
+                        >
+                            Preparar promoção
+                        </button>
+
+                    </form>
+
+                {% else %}
+
+                    <div class="estado-vazio">
+                        Link do produto indisponível.
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </article>
+
+    {% else %}
+
+        <div class="estado-vazio">
+            ✅ Nenhum produto aguardando preparação.
+        </div>
+
+    {% endfor %}
+
+</div>
+
+{% if total_paginas > 1 %}
+
+    <nav class="paginacao">
+
+        {% if pagina > 1 %}
+
+            <a
+                class="
+                    botao
+                    botao-secundario
+                "
+
+                href="{{
+                    url_for(
+                        'pagina_link',
+                        pagina=pagina - 1,
+                        busca=busca,
+                        categoria=
+                            categoria_selecionada,
+                        ordem=
+                            ordem_selecionada
+                    )
+                }}"
+            >
+                ← Anterior
+            </a>
+
+        {% endif %}
+
+        <span class="pagina-info">
+            Página
+            {{ pagina }}
+            de
+            {{ total_paginas }}
+        </span>
+
+        {% if pagina < total_paginas %}
+
+            <a
+                class="
+                    botao
+                    botao-secundario
+                "
+
+                href="{{
+                    url_for(
+                        'pagina_link',
+                        pagina=pagina + 1,
+                        busca=busca,
+                        categoria=
+                            categoria_selecionada,
+                        ordem=
+                            ordem_selecionada
+                    )
+                }}"
+            >
+                Próxima →
+            </a>
+
+        {% endif %}
+
+    </nav>
+
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function formatarMoeda(input) {
+        let numeros =
+            input.value.replace(
+                /\D/g,
+                ""
+            );
+
+        if (!numeros) {
+            input.value = "";
+            return;
+        }
+
+        numeros =
+            numeros.padStart(
+                3,
+                "0"
+            );
+
+        const centavos =
+            numeros.slice(-2);
+
+        let inteiro =
+            numeros.slice(
+                0,
+                -2
+            );
+
+        inteiro =
+            parseInt(
+                inteiro,
+                10
+            ).toString();
+
+        inteiro =
+            inteiro.replace(
+                /\B(?=(\d{3})+(?!\d))/g,
+                "."
+            );
+
+        input.value =
+            `R$ ${inteiro},${centavos}`;
+    }
+
+    document.querySelectorAll(
+        ".input-moeda"
+    ).forEach(
+        (input) => {
+
+            input.addEventListener(
+                "input",
+                () => {
+                    formatarMoeda(
+                        input
+                    );
+                }
+            );
+
+        }
+    );
+
+    function moedaParaNumero(valor) {
+        if (!valor) {
+            return null;
+        }
+
+        const limpo =
+            valor
+            .replace(
+                "R$",
+                ""
+            )
+            .replace(
+                /\./g,
+                ""
+            )
+            .replace(
+                ",",
+                "."
+            )
+            .trim();
+
+        const numero =
+            Number(limpo);
+
+        if (
+            Number.isNaN(
+                numero
+            )
+        ) {
+            return null;
+        }
+
+        return numero;
+    }
+
+    document.querySelectorAll(
+        ".form-oferta"
+    ).forEach(
+        (form) => {
+
+            form.addEventListener(
+                "submit",
+                (evento) => {
+
+                    const atual =
+                        form.querySelector(
+                            'input[name="preco"]'
+                        );
+
+                    const anterior =
+                        form.querySelector(
+                            'input[name="preco_original"]'
+                        );
+
+                    const precoAtual =
+                        moedaParaNumero(
+                            atual.value
+                        );
+
+                    const precoAnterior =
+                        moedaParaNumero(
+                            anterior.value
+                        );
+
+                    if (
+                        precoAnterior !== null
+                        &&
+                        precoAtual !== null
+                        &&
+                        precoAnterior <= precoAtual
+                    ) {
+                        evento.preventDefault();
+
+                        alert(
+                            "O preço anterior deve ser maior que o preço atual."
+                        );
+
+                        anterior.focus();
+                    }
+                }
+            );
+
+        }
+    );
+</script>
+{% endblock %}

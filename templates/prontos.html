@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}
+PromoConn - Fila
+{% endblock %}
+
+{% block content %}
+
+<section class="cabecalho-pagina">
+
+    <div>
+
+        <h2>
+            Fila de publicação
+        </h2>
+
+        <p>
+            Promoções prontas para envio automático
+            ou publicação manual.
+        </p>
+
+    </div>
+
+</section>
+
+<div class="secao-titulo">
+
+    <h3>
+        Ordem da fila
+    </h3>
+
+    <span>
+        {{ produtos|length }}
+        promoção(ões)
+    </span>
+
+</div>
+
+<div class="produtos-grid">
+
+    {% for produto in produtos %}
+
+        <article class="produto">
+
+            <div class="imagem-box">
+
+                {% if produto.imagem %}
+
+                    <img
+                        src="{{ produto.imagem }}"
+                        alt="{{ produto.nome }}"
+                    >
+
+                {% else %}
+
+                    📦 Sem imagem
+
+                {% endif %}
+
+            </div>
+
+            <div class="produto-conteudo">
+
+                <div class="badges">
+
+                    <span class="badge badge-score">
+                        {{ produto.pontuacao }}
+                    </span>
+
+                    <span class="badge badge-ranking">
+                        #{{ produto.ranking or "-" }}
+                    </span>
+
+                    <span class="badge badge-pronto">
+                        Pronto
+                    </span>
+
+                </div>
+
+                <h3>
+                    {{ produto.nome }}
+                </h3>
+
+                <div class="categoria">
+
+                    {{
+                        produto.categoria
+                        or "Sem categoria"
+                    }}
+
+                    ·
+
+                    {{ produto.tipo }}
+
+                </div>
+
+                {% if produto.preco_original %}
+
+                    <div class="preco-antigo">
+
+                        De R$
+
+                        {{
+                            "%.2f"
+                            |format(
+                                produto.preco_original
+                            )
+                            |replace(".", ",")
+                        }}
+
+                    </div>
+
+                {% endif %}
+
+                {% if produto.preco %}
+
+                    <div class="preco">
+
+                        R$
+
+                        {{
+                            "%.2f"
+                            |format(
+                                produto.preco
+                            )
+                            |replace(".", ",")
+                        }}
+
+                    </div>
+
+                {% endif %}
+
+                {% if produto.desconto %}
+
+                    <div class="desconto">
+
+                        ↓
+
+                        {{
+                            "%.0f"
+                            |format(
+                                produto.desconto
+                            )
+                        }}
+
+                        % OFF
+
+                    </div>
+
+                {% endif %}
+
+                {% if produto.link_produto %}
+
+                    <a
+                        href="{{ produto.link_produto }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="
+                            botao
+                            botao-produto
+                        "
+                    >
+                        Abrir produto
+                    </a>
+
+                {% endif %}
+
+                <form
+                    method="POST"
+
+                    action="{{
+                        url_for(
+                            'publicar_telegram',
+                            oportunidade_id=
+                                produto.id
+                        )
+                    }}"
+                >
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+
+                    <button
+                        type="submit"
+                        class="
+                            botao
+                            botao-telegram
+                        "
+                        style="margin-top: 10px;"
+                    >
+                        Publicar agora
+                    </button>
+
+                </form>
+
+            </div>
+
+        </article>
+
+    {% else %}
+
+        <div class="estado-vazio">
+            📭 Nenhuma promoção pronta na fila.
+        </div>
+
+    {% endfor %}
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,448 @@
+{% extends "base.html" %}
+
+{% block title %}
+PromoConn - Publicados
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .historico-lista {
+        display: grid;
+        gap: 12px;
+    }
+
+    .historico-item {
+        display: grid;
+
+        grid-template-columns:
+            70px minmax(220px, 2fr)
+            minmax(140px, 1fr)
+            minmax(140px, 1fr)
+            minmax(130px, auto);
+
+        gap: 14px;
+
+        align-items: center;
+
+        padding: 14px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.97
+            );
+
+        border:
+            1px solid
+            var(--borda);
+
+        border-radius: 14px;
+
+        box-shadow:
+            0 5px 18px
+            rgba(
+                7,
+                29,
+                73,
+                0.05
+            );
+    }
+
+    .historico-imagem {
+        width: 60px;
+        height: 60px;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        overflow: hidden;
+
+        border-radius: 10px;
+
+        background: #f7f9fc;
+    }
+
+    .historico-imagem img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .historico-item h3 {
+        margin: 0 0 4px;
+        font-size: 14px;
+    }
+
+    .historico-meta {
+        color:
+            var(--cinza-texto);
+
+        font-size: 12px;
+    }
+
+    .historico-preco {
+        color:
+            var(--azul-escuro);
+
+        font-weight: bold;
+    }
+
+    @media (
+        max-width: 850px
+    ) {
+        .historico-item {
+            grid-template-columns:
+                60px 1fr;
+        }
+
+        .historico-extra {
+            grid-column:
+                2;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<section class="cabecalho-pagina">
+
+    <div>
+
+        <h2>
+            Publicados
+        </h2>
+
+        <p>
+            Histórico das promoções enviadas
+            aos grupos do Telegram.
+        </p>
+
+    </div>
+
+</section>
+
+<details class="expander">
+
+    <summary>
+
+        <span class="expander-titulo">
+
+            Filtros do histórico
+
+            <span class="expander-contador">
+                {{ total_filtrado }}
+            </span>
+
+        </span>
+
+        <span class="expander-seta">
+            ▼
+        </span>
+
+    </summary>
+
+    <div class="expander-conteudo">
+
+        <form
+            method="GET"
+            action="{{ url_for('pagina_publicados') }}"
+        >
+
+            <div
+                class="filtros-grid"
+                style="
+                    grid-template-columns:
+                        2fr 1fr;
+                "
+            >
+
+                <div class="campo">
+
+                    <label>
+                        Produto
+                    </label>
+
+                    <input
+                        type="text"
+                        name="busca"
+                        value="{{ busca }}"
+                        placeholder="Pesquisar no histórico..."
+                    >
+
+                </div>
+
+                <div class="campo">
+
+                    <label>
+                        Categoria
+                    </label>
+
+                    <select name="categoria">
+
+                        <option value="">
+                            Todas
+                        </option>
+
+                        {% for categoria in categorias %}
+
+                            <option
+                                value="{{ categoria }}"
+
+                                {% if
+                                    categoria
+                                    == categoria_selecionada
+                                %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ categoria }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+            </div>
+
+            <div class="filtros-acoes">
+
+                <a
+                    href="{{
+                        url_for(
+                            'pagina_publicados'
+                        )
+                    }}"
+                    class="
+                        botao
+                        botao-secundario
+                    "
+                >
+                    Limpar
+                </a>
+
+                <button
+                    type="submit"
+                    class="
+                        botao
+                        botao-primario
+                    "
+                >
+                    Aplicar
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</details>
+
+<div class="secao-titulo">
+
+    <h3>
+        Histórico
+    </h3>
+
+    <span>
+        {{ total_filtrado }}
+        publicação(ões)
+    </span>
+
+</div>
+
+<div class="historico-lista">
+
+    {% for item in publicados %}
+
+        <article class="historico-item">
+
+            <div class="historico-imagem">
+
+                {% if item.imagem %}
+
+                    <img
+                        src="{{ item.imagem }}"
+                        alt="{{ item.nome }}"
+                    >
+
+                {% else %}
+
+                    📦
+
+                {% endif %}
+
+            </div>
+
+            <div>
+
+                <h3>
+                    {{ item.nome }}
+                </h3>
+
+                <div class="historico-meta">
+
+                    {{
+                        item.categoria
+                        or "Sem categoria"
+                    }}
+
+                    ·
+
+                    {{ item.ml_id }}
+
+                </div>
+
+            </div>
+
+            <div class="historico-extra">
+
+                <div class="historico-meta">
+                    Grupo
+                </div>
+
+                <strong>
+                    {{
+                        item.telegram_canal
+                        or "Não registrado"
+                    }}
+                </strong>
+
+            </div>
+
+            <div class="historico-extra">
+
+                <div class="historico-meta">
+                    Publicado em
+                </div>
+
+                <strong>
+                    {{
+                        item.publicado_em
+                        or "-"
+                    }}
+                </strong>
+
+            </div>
+
+            <div class="historico-extra">
+
+                {% if item.preco %}
+
+                    <div class="historico-preco">
+
+                        R$
+
+                        {{
+                            "%.2f"
+                            |format(
+                                item.preco
+                            )
+                            |replace(".", ",")
+                        }}
+
+                    </div>
+
+                {% endif %}
+
+                {% if item.link_produto %}
+
+                    <a
+                        href="{{ item.link_produto }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="
+                            botao
+                            botao-secundario
+                        "
+                        style="margin-top: 6px;"
+                    >
+                        Abrir
+                    </a>
+
+                {% endif %}
+
+            </div>
+
+        </article>
+
+    {% else %}
+
+        <div class="estado-vazio">
+            Nenhuma publicação encontrada.
+        </div>
+
+    {% endfor %}
+
+</div>
+
+{% if total_paginas > 1 %}
+
+    <nav class="paginacao">
+
+        {% if pagina > 1 %}
+
+            <a
+                class="
+                    botao
+                    botao-secundario
+                "
+
+                href="{{
+                    url_for(
+                        'pagina_publicados',
+                        pagina=pagina - 1,
+                        busca=busca,
+                        categoria=
+                            categoria_selecionada
+                    )
+                }}"
+            >
+                ← Anterior
+            </a>
+
+        {% endif %}
+
+        <span class="pagina-info">
+            Página
+            {{ pagina }}
+            de
+            {{ total_paginas }}
+        </span>
+
+        {% if pagina < total_paginas %}
+
+            <a
+                class="
+                    botao
+                    botao-secundario
+                "
+
+                href="{{
+                    url_for(
+                        'pagina_publicados',
+                        pagina=pagina + 1,
+                        busca=busca,
+                        categoria=
+                            categoria_selecionada
+                    )
+                }}"
+            >
+                Próxima →
+            </a>
+
+        {% endif %}
+
+    </nav>
+
+{% endif %}
+
+{% endblock %}

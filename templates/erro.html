@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}
+PromoConn - {{ titulo }}
+{% endblock %}
+
+{% block content %}
+
+<div class="estado-vazio">
+
+    <h2
+        style="
+            margin-top: 0;
+            color: var(--azul-900);
+        "
+    >
+        {{ titulo }}
+    </h2>
+
+    <p>
+        {{ mensagem }}
+    </p>
+
+    <a
+        href="{{ url_for('painel') }}"
+        class="
+            botao
+            botao-azul
+        "
+    >
+        Voltar ao painel
+    </a>
+
+</div>
+
+{% endblock %}

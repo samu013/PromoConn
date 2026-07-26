@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}
+PromoConn - Canais
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .canais-grid {
+        display: grid;
+
+        grid-template-columns:
+            repeat(
+                auto-fill,
+                minmax(
+                    270px,
+                    1fr
+                )
+            );
+
+        gap: 16px;
+    }
+
+    .canal-card {
+        padding: 18px;
+
+        background:
+            rgba(
+                255,
+                255,
+                255,
+                0.97
+            );
+
+        border:
+            1px solid
+            var(--borda);
+
+        border-radius: 17px;
+
+        box-shadow:
+            var(--sombra);
+    }
+
+    .canal-topo {
+        display: flex;
+
+        align-items: flex-start;
+
+        justify-content:
+            space-between;
+
+        gap: 10px;
+    }
+
+    .canal-card h3 {
+        margin: 0;
+        font-size: 16px;
+    }
+
+    .canal-categoria {
+        margin-top: 5px;
+
+        color:
+            var(--cinza-texto);
+
+        font-size: 12px;
+    }
+
+    .canal-status {
+        padding: 5px 9px;
+
+        border-radius: 20px;
+
+        background: #dff8e9;
+        color: #087d3e;
+
+        font-size: 11px;
+        font-weight: bold;
+    }
+
+    .canal-status.inativo {
+        background: #edf1f5;
+        color: #667085;
+    }
+
+    .canal-id {
+        margin-top: 16px;
+
+        padding: 10px;
+
+        border-radius: 10px;
+
+        background: #f7f9fc;
+
+        color:
+            var(--cinza-texto);
+
+        font-family:
+            monospace;
+
+        font-size: 12px;
+
+        overflow-wrap:
+            anywhere;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<section class="cabecalho-pagina">
+
+    <div>
+
+        <h2>
+            Canais do Telegram
+        </h2>
+
+        <p>
+            Grupos configurados para o roteamento
+            automático das promoções.
+        </p>
+
+    </div>
+
+</section>
+
+<div class="secao-titulo">
+
+    <h3>
+        Canais cadastrados
+    </h3>
+
+    <span>
+        {{ canais|length }}
+        canal(is)
+    </span>
+
+</div>
+
+<div class="canais-grid">
+
+    {% for canal in canais %}
+
+        <article class="canal-card">
+
+            <div class="canal-topo">
+
+                <div>
+
+                    <h3>
+                        {{ canal.nome }}
+                    </h3>
+
+                    <div class="canal-categoria">
+
+                        Categoria:
+                        {{ canal.categoria }}
+
+                    </div>
+
+                </div>
+
+                <span
+                    class="
+                        canal-status
+
+                        {% if not canal.ativo %}
+                            inativo
+                        {% endif %}
+                    "
+                >
+
+                    {% if canal.ativo %}
+                        Ativo
+                    {% else %}
+                        Inativo
+                    {% endif %}
+
+                </span>
+
+            </div>
+
+            <div class="canal-id">
+
+                Chat ID:
+                {{ canal.chat_id }}
+
+            </div>
+
+        </article>
+
+    {% else %}
+
+        <div class="estado-vazio">
+            Nenhum canal cadastrado.
+        </div>
+
+    {% endfor %}
+
+</div>
+
+{% endblock %}
