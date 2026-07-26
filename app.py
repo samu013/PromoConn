@@ -1288,10 +1288,28 @@ def salvar_oferta(
         cursor.close()
         conexao.close()
 
+    # Volta sempre para a página de preparação.
+    # Se o formulário enviou os filtros atuais,
+    # eles são preservados.
     return redirect(
-        request.referrer
-        or url_for(
-            "pagina_link"
+        url_for(
+            "pagina_link",
+            busca=request.form.get(
+                "retorno_busca",
+                ""
+            ),
+            categoria=request.form.get(
+                "retorno_categoria",
+                ""
+            ),
+            ordem=request.form.get(
+                "retorno_ordem",
+                "score"
+            ),
+            pagina=request.form.get(
+                "retorno_pagina",
+                1
+            ),
         )
     )
 
