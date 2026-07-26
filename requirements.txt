@@ -3,3 +3,4 @@ gunicorn
 psycopg[binary]
 python-dotenv
 requests
+Flask-WTF==1.2.2
