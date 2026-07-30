@@ -197,6 +197,8 @@ class Highlights:
             base.get("name")
             or base.get("title")
             or base.get("nome")
+            or base.get("short_title")
+            or base.get("display_name")
         )
 
         categoria_id = (
@@ -253,14 +255,21 @@ class Highlights:
 
         caminhos = []
 
-        if tipo == "PRODUCT" or produto_id.startswith("MLB"):
-            caminhos.append(f"/products/{produto_id}")
+        if tipo == "USER_PRODUCT" or produto_id.startswith("MLBU"):
+            caminhos.append(f"/user-products/{produto_id}")
 
         if tipo == "ITEM":
             caminhos.append(f"/items/{produto_id}")
 
-        if tipo == "USER_PRODUCT" or produto_id.startswith("MLBU"):
-            caminhos.append(f"/user-products/{produto_id}")
+        if tipo == "PRODUCT":
+            caminhos.append(f"/products/{produto_id}")
+
+        # IDs MLB podem ser produto de catálogo ou anúncio. Quando o tipo
+        # não é suficiente, testamos os dois endpoints para reduzir itens
+        # sem nome.
+        if produto_id.startswith("MLB") and not produto_id.startswith("MLBU"):
+            caminhos.append(f"/products/{produto_id}")
+            caminhos.append(f"/items/{produto_id}")
 
         # Evita repetir o mesmo caminho.
         caminhos = list(dict.fromkeys(caminhos))
@@ -285,6 +294,8 @@ class Highlights:
             nome = (
                 detalhes.get("name")
                 or detalhes.get("title")
+                or detalhes.get("short_title")
+                or detalhes.get("display_name")
             )
 
             categoria_id = (
