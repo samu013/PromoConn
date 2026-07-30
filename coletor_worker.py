@@ -1,4 +1,6 @@
+import re
 import time
+import unicodedata
 
 from database.database import criar_tabelas
 from database.oportunidades import salvar_oportunidade
@@ -17,38 +19,209 @@ from mercadolivre.trends import Trends
 
 INTERVALO_SEGUNDOS = 60 * 60
 
+EXPANDIR_SUBCATEGORIAS = True
+MAX_SUBCATEGORIAS_POR_GRUPO = 10
 
-# Categorias principais que já estavam funcionando.
+
+# Cada grupo possui:
 #
-# O coletor agora também pode consultar automaticamente
-# subcategorias diretas de cada uma delas, usando o endpoint
-# oficial /categories/{id}.
-CATEGORIAS = {
-    "Celulares": "MLB1055",
-    "Games": "MLB1144",
-    "Tecnologia": "MLB1648",
-    "Casa": "MLB1574",
-    "Esportes": "MLB264201",
+# id:
+#   categoria usada no endpoint de Highlights.
+#
+# expandir:
+#   define se as subcategorias diretas serão consultadas.
+#
+# filtro:
+#   opcional. É usado em Moda Feminina e Moda Masculina
+#   para evitar que os mesmos produtos entrem nos dois
+#   grupos.
+GRUPOS = {
+    "Celulares": {
+        "id": "MLB1055",
+        "expandir": True,
+        "filtro": None,
+    },
+
+    "Games": {
+        "id": "MLB1144",
+        "expandir": True,
+        "filtro": None,
+    },
+
+    "Tecnologia": {
+        "id": "MLB1648",
+        "expandir": True,
+        "filtro": None,
+    },
+
+    "Casa": {
+        "id": "MLB1574",
+        "expandir": True,
+        "filtro": None,
+    },
+
+    "Esportes": {
+        "id": "MLB264201",
+        "expandir": True,
+        "filtro": None,
+    },
+
+    # Categoria principal oficial:
+    # Calçados, Roupas e Bolsas.
+    #
+    # Os dois grupos consultam a mesma categoria principal,
+    # mas cada um aplica um filtro pelo nome do produto.
+    "Moda Feminina": {
+        "id": "MLB1430",
+        "expandir": True,
+        "filtro": "feminino",
+    },
+
+    "Moda Masculina": {
+        "id": "MLB1430",
+        "expandir": True,
+        "filtro": "masculino",
+    },
+}
+
+
+PALAVRAS_FEMININAS = {
+    "feminina",
+    "feminino",
+    "mulher",
+    "mulheres",
+    "dama",
+    "vestido",
+    "saia",
+    "saias",
+    "blusa",
+    "blusas",
+    "cropped",
+    "legging",
+    "leggings",
+    "lingerie",
+    "calcinha",
+    "calcinhas",
+    "sutia",
+    "sutiã",
+    "sutiãs",
+    "body feminino",
+    "bolsa feminina",
+    "sandalia feminina",
+    "sandália feminina",
+    "sapatilha",
+    "salto feminino",
+}
+
+PALAVRAS_MASCULINAS = {
+    "masculina",
+    "masculino",
+    "homem",
+    "homens",
+    "bermuda masculina",
+    "camisa masculina",
+    "camiseta masculina",
+    "calca masculina",
+    "calça masculina",
+    "cueca",
+    "cuecas",
+    "terno",
+    "ternos",
+    "gravata",
+    "gravatas",
+    "sapato masculino",
+    "tenis masculino",
+    "tênis masculino",
 }
 
 
 # =========================================================
-# DIVERSIDADE DA COLETA
+# TEXTO / CLASSIFICAÇÃO
 # =========================================================
 
-# True:
-#   consulta a categoria principal + subcategorias diretas.
-#
-# False:
-#   mantém exatamente o comportamento antigo.
-EXPANDIR_SUBCATEGORIAS = True
+def normalizar_texto(texto):
+    texto = str(
+        texto
+        or ""
+    ).lower()
+
+    texto = unicodedata.normalize(
+        "NFKD",
+        texto,
+    )
+
+    texto = "".join(
+        caractere
+        for caractere in texto
+        if not unicodedata.combining(
+            caractere
+        )
+    )
+
+    texto = re.sub(
+        r"\s+",
+        " ",
+        texto,
+    ).strip()
+
+    return texto
 
 
-# Limite de subcategorias por grupo principal.
-#
-# Isso evita centenas de chamadas numa única coleta.
-# Você pode aumentar depois, se quiser.
-MAX_SUBCATEGORIAS_POR_GRUPO = 10
+PALAVRAS_FEMININAS_NORMALIZADAS = {
+    normalizar_texto(palavra)
+    for palavra in PALAVRAS_FEMININAS
+}
+
+PALAVRAS_MASCULINAS_NORMALIZADAS = {
+    normalizar_texto(palavra)
+    for palavra in PALAVRAS_MASCULINAS
+}
+
+
+def contem_alguma_palavra(
+    texto,
+    palavras,
+):
+    return any(
+        palavra in texto
+        for palavra in palavras
+    )
+
+
+def produto_pertence_ao_filtro(
+    nome,
+    filtro,
+):
+    if not filtro:
+        return True
+
+    texto = normalizar_texto(
+        nome
+    )
+
+    feminino = contem_alguma_palavra(
+        texto,
+        PALAVRAS_FEMININAS_NORMALIZADAS,
+    )
+
+    masculino = contem_alguma_palavra(
+        texto,
+        PALAVRAS_MASCULINAS_NORMALIZADAS,
+    )
+
+    if filtro == "feminino":
+        return (
+            feminino
+            and not masculino
+        )
+
+    if filtro == "masculino":
+        return (
+            masculino
+            and not feminino
+        )
+
+    return True
 
 
 # =========================================================
@@ -62,7 +235,6 @@ def coletar_tendencias():
     print("=" * 70)
 
     trends = Trends()
-
     tendencias = trends.buscar()
 
     if not tendencias:
@@ -76,8 +248,6 @@ def coletar_tendencias():
         f"{len(tendencias)}"
     )
 
-    # Marca as antigas como inativas.
-    # As encontradas novamente serão reativadas.
     desativar_todas()
 
     total_salvas = 0
@@ -86,7 +256,6 @@ def coletar_tendencias():
         tendencias,
         start=1,
     ):
-        # Permite alguns formatos diferentes.
         if isinstance(
             tendencia,
             str,
@@ -100,31 +269,17 @@ def coletar_tendencias():
             dict,
         ):
             palavra = (
-                tendencia.get(
-                    "keyword"
-                )
-                or tendencia.get(
-                    "palavra"
-                )
-                or tendencia.get(
-                    "name"
-                )
-                or tendencia.get(
-                    "query"
-                )
+                tendencia.get("keyword")
+                or tendencia.get("palavra")
+                or tendencia.get("name")
+                or tendencia.get("query")
             )
 
-            url = tendencia.get(
-                "url"
-            )
+            url = tendencia.get("url")
 
             posicao_api = (
-                tendencia.get(
-                    "position"
-                )
-                or tendencia.get(
-                    "posicao"
-                )
+                tendencia.get("position")
+                or tendencia.get("posicao")
                 or posicao
             )
 
@@ -157,24 +312,12 @@ def coletar_tendencias():
 def buscar_subcategorias(
     client,
     categoria_id,
+    expandir=True,
 ):
-    """
-    Busca as subcategorias diretas de uma categoria.
-
-    Retorna uma lista no formato:
-
-    [
-        {
-            "id": "MLB...",
-            "name": "..."
-        }
-    ]
-
-    Se a consulta falhar, simplesmente retorna [] e
-    a coleta da categoria principal continua normalmente.
-    """
-
-    if not EXPANDIR_SUBCATEGORIAS:
+    if (
+        not EXPANDIR_SUBCATEGORIAS
+        or not expandir
+    ):
         return []
 
     try:
@@ -222,23 +365,28 @@ def buscar_subcategorias(
         ):
             continue
 
-        subcategoria_id = (
-            filho.get(
-                "id"
-            )
+        subcategoria_id = filho.get(
+            "id"
         )
 
-        subcategoria_nome = (
-            filho.get(
-                "name"
-            )
+        subcategoria_nome = filho.get(
+            "name"
         )
 
         if not subcategoria_id:
             continue
 
+        # A dimensão "Outros" costuma não existir no endpoint
+        # de Highlights e gerar 404.
+        if normalizar_texto(
+            subcategoria_nome
+        ) == "outros":
+            continue
+
         subcategorias.append({
-            "id": subcategoria_id,
+            "id":
+                subcategoria_id,
+
             "name": (
                 subcategoria_nome
                 or subcategoria_id
@@ -246,9 +394,7 @@ def buscar_subcategorias(
         })
 
         if (
-            len(
-                subcategorias
-            )
+            len(subcategorias)
             >= MAX_SUBCATEGORIAS_POR_GRUPO
         ):
             break
@@ -259,25 +405,33 @@ def buscar_subcategorias(
 def montar_categorias_coleta(
     highlights,
     categoria_nome,
-    categoria_id,
+    configuracao,
 ):
-    """
-    Monta a lista de endpoints de Highlights a consultar.
-
-    Primeiro entra a categoria principal.
-    Depois, se habilitado, entram as subcategorias diretas.
-    """
+    categoria_id = configuracao[
+        "id"
+    ]
 
     categorias = [{
-        "id": categoria_id,
-        "nome_api": categoria_nome,
-        "categoria_salva": categoria_nome,
-        "principal": True,
+        "id":
+            categoria_id,
+
+        "nome_api":
+            categoria_nome,
+
+        "categoria_salva":
+            categoria_nome,
+
+        "principal":
+            True,
     }]
 
     subcategorias = buscar_subcategorias(
         highlights.client,
         categoria_id,
+        expandir=configuracao.get(
+            "expandir",
+            True,
+        ),
     )
 
     for subcategoria in subcategorias:
@@ -288,9 +442,6 @@ def montar_categorias_coleta(
             "nome_api":
                 subcategoria["name"],
 
-            # Mantemos a categoria principal no banco
-            # para não quebrar o roteamento atual dos
-            # canais Telegram.
             "categoria_salva":
                 categoria_nome,
 
@@ -302,30 +453,21 @@ def montar_categorias_coleta(
 
 
 # =========================================================
-# SALVAR RESULTADOS DE UMA CATEGORIA
+# SALVAR RESULTADOS
 # =========================================================
 
 def processar_produtos_highlight(
     produtos,
     categoria_salva,
+    filtro=None,
 ):
-    """
-    Processa o resultado de uma consulta de Highlights.
-
-    Retorna:
-        recebidos
-        novos
-        conhecidos_ou_recentes
-        invalidos
-        erros
-    """
-
     recebidos = len(
         produtos
     )
 
     novos = 0
     conhecidos_ou_recentes = 0
+    filtrados = 0
     invalidos = 0
     erros = 0
 
@@ -342,24 +484,14 @@ def processar_produtos_highlight(
         )
 
         tipo = (
-            produto.get(
-                "tipo"
-            )
-            or produto.get(
-                "type"
-            )
+            produto.get("tipo")
+            or produto.get("type")
         )
 
         nome = (
-            produto.get(
-                "nome"
-            )
-            or produto.get(
-                "name"
-            )
-            or produto.get(
-                "title"
-            )
+            produto.get("nome")
+            or produto.get("name")
+            or produto.get("title")
         )
 
         if (
@@ -368,6 +500,13 @@ def processar_produtos_highlight(
             or not nome
         ):
             invalidos += 1
+            continue
+
+        if not produto_pertence_ao_filtro(
+            nome,
+            filtro,
+        ):
+            filtrados += 1
             continue
 
         oportunidade = {
@@ -381,24 +520,14 @@ def processar_produtos_highlight(
                 nome,
 
             "imagem": (
-                produto.get(
-                    "imagem"
-                )
-                or produto.get(
-                    "picture"
-                )
-                or produto.get(
-                    "thumbnail"
-                )
+                produto.get("imagem")
+                or produto.get("picture")
+                or produto.get("thumbnail")
             ),
 
             "ranking": (
-                produto.get(
-                    "ranking"
-                )
-                or produto.get(
-                    "position"
-                )
+                produto.get("ranking")
+                or produto.get("position")
             ),
         }
 
@@ -411,11 +540,7 @@ def processar_produtos_highlight(
 
             if novo:
                 novos += 1
-
             else:
-                # salvar_oportunidade() retorna False
-                # tanto quando a oportunidade já existe
-                # quanto quando foi publicada recentemente.
                 conhecidos_ou_recentes += 1
 
         except Exception as erro:
@@ -435,6 +560,9 @@ def processar_produtos_highlight(
 
         "conhecidos_ou_recentes":
             conhecidos_ou_recentes,
+
+        "filtrados":
+            filtrados,
 
         "invalidos":
             invalidos,
@@ -459,65 +587,52 @@ def coletar_highlights():
     total_consultas = 0
     total_recebidos = 0
     total_novos = 0
-    total_conhecidos_ou_recentes = 0
+    total_conhecidos = 0
+    total_filtrados = 0
     total_invalidos = 0
     total_erros = 0
 
     for (
         categoria_nome,
-        categoria_id,
-    ) in CATEGORIAS.items():
+        configuracao,
+    ) in GRUPOS.items():
 
         print()
-        print(
-            "#" * 70
-        )
-
+        print("#" * 70)
         print(
             f"GRUPO: {categoria_nome}"
         )
-
-        print(
-            "#" * 70
-        )
+        print("#" * 70)
 
         categorias_coleta = (
             montar_categorias_coleta(
                 highlights,
                 categoria_nome,
-                categoria_id,
+                configuracao,
             )
-        )
-
-        quantidade_subcategorias = (
-            len(
-                categorias_coleta
-            )
-            - 1
         )
 
         print(
             "Categoria principal: "
-            f"{categoria_id}"
+            f"{configuracao['id']}"
         )
 
         print(
             "Subcategorias selecionadas: "
-            f"{quantidade_subcategorias}"
+            f"{len(categorias_coleta) - 1}"
         )
 
         grupo_recebidos = 0
         grupo_novos = 0
         grupo_conhecidos = 0
+        grupo_filtrados = 0
 
         for categoria in categorias_coleta:
             total_consultas += 1
 
             prefixo = (
                 "Principal"
-                if categoria[
-                    "principal"
-                ]
+                if categoria["principal"]
                 else "Subcategoria"
             )
 
@@ -529,12 +644,8 @@ def coletar_highlights():
             )
 
             try:
-                produtos = (
-                    highlights.buscar(
-                        categoria[
-                            "id"
-                        ]
-                    )
+                produtos = highlights.buscar(
+                    categoria["id"]
                 )
 
             except Exception as erro:
@@ -558,56 +669,51 @@ def coletar_highlights():
                     categoria[
                         "categoria_salva"
                     ],
+                    filtro=configuracao.get(
+                        "filtro"
+                    ),
                 )
             )
 
-            total_recebidos += (
-                resultado[
-                    "recebidos"
-                ]
-            )
+            total_recebidos += resultado[
+                "recebidos"
+            ]
 
-            total_novos += (
-                resultado[
-                    "novos"
-                ]
-            )
+            total_novos += resultado[
+                "novos"
+            ]
 
-            total_conhecidos_ou_recentes += (
-                resultado[
-                    "conhecidos_ou_recentes"
-                ]
-            )
+            total_conhecidos += resultado[
+                "conhecidos_ou_recentes"
+            ]
 
-            total_invalidos += (
-                resultado[
-                    "invalidos"
-                ]
-            )
+            total_filtrados += resultado[
+                "filtrados"
+            ]
 
-            total_erros += (
-                resultado[
-                    "erros"
-                ]
-            )
+            total_invalidos += resultado[
+                "invalidos"
+            ]
 
-            grupo_recebidos += (
-                resultado[
-                    "recebidos"
-                ]
-            )
+            total_erros += resultado[
+                "erros"
+            ]
 
-            grupo_novos += (
-                resultado[
-                    "novos"
-                ]
-            )
+            grupo_recebidos += resultado[
+                "recebidos"
+            ]
 
-            grupo_conhecidos += (
-                resultado[
-                    "conhecidos_ou_recentes"
-                ]
-            )
+            grupo_novos += resultado[
+                "novos"
+            ]
+
+            grupo_conhecidos += resultado[
+                "conhecidos_ou_recentes"
+            ]
+
+            grupo_filtrados += resultado[
+                "filtrados"
+            ]
 
             print(
                 "    Recebidos: "
@@ -624,17 +730,19 @@ def coletar_highlights():
                 f"{resultado['conhecidos_ou_recentes']}"
             )
 
-            if resultado[
-                "invalidos"
-            ]:
+            if resultado["filtrados"]:
+                print(
+                    "    Fora do perfil do grupo: "
+                    f"{resultado['filtrados']}"
+                )
+
+            if resultado["invalidos"]:
                 print(
                     "    Inválidos: "
                     f"{resultado['invalidos']}"
                 )
 
-            if resultado[
-                "erros"
-            ]:
+            if resultado["erros"]:
                 print(
                     "    Erros: "
                     f"{resultado['erros']}"
@@ -660,6 +768,14 @@ def coletar_highlights():
             f"{grupo_conhecidos}"
         )
 
+        if configuracao.get(
+            "filtro"
+        ):
+            print(
+                "  Fora do perfil do grupo: "
+                f"{grupo_filtrados}"
+            )
+
     print()
     print("=" * 70)
     print("RESUMO FINAL DOS HIGHLIGHTS")
@@ -682,7 +798,12 @@ def coletar_highlights():
 
     print(
         "Já existentes/recentes: "
-        f"{total_conhecidos_ou_recentes}"
+        f"{total_conhecidos}"
+    )
+
+    print(
+        "Fora do perfil dos grupos: "
+        f"{total_filtrados}"
     )
 
     print(
@@ -715,10 +836,7 @@ def executar_coleta():
         print(
             "Erro geral nas tendências:"
         )
-
-        print(
-            erro
-        )
+        print(erro)
 
     try:
         coletar_highlights()
@@ -727,10 +845,7 @@ def executar_coleta():
         print(
             "Erro geral nos highlights:"
         )
-
-        print(
-            erro
-        )
+        print(erro)
 
 
 # =========================================================
@@ -746,8 +861,7 @@ def executar_worker():
     print("=" * 70)
 
     print(
-        "Intervalo de coleta: "
-        "1 hora"
+        "Intervalo de coleta: 1 hora"
     )
 
     print(
@@ -759,13 +873,6 @@ def executar_worker():
         )
     )
 
-    if EXPANDIR_SUBCATEGORIAS:
-        print(
-            "Máximo de subcategorias "
-            "por grupo: "
-            f"{MAX_SUBCATEGORIAS_POR_GRUPO}"
-        )
-
     while True:
         try:
             executar_coleta()
@@ -773,20 +880,14 @@ def executar_worker():
         except Exception as erro:
             print()
             print(
-                "Erro inesperado "
-                "no ciclo:"
+                "Erro inesperado no ciclo:"
             )
-
-            print(
-                erro
-            )
+            print(erro)
 
         print()
         print(
-            "Próxima coleta "
-            "em 1 hora."
+            "Próxima coleta em 1 hora."
         )
-
         print()
 
         time.sleep(

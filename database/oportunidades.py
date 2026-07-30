@@ -29,7 +29,7 @@ def foi_publicado_recentemente(
         LIMIT 1
         """,
         (
-            ml_id,
+            str(ml_id),
             data_limite,
         )
     )
@@ -56,16 +56,20 @@ def salvar_oportunidade(
     Retorna:
         True  -> oportunidade nova
         False -> já existia ou foi publicada recentemente
+
+    Importante:
+        a categoria de uma oportunidade existente não é
+        sobrescrita por outra categoria de Highlights.
+        Isso evita que um mesmo produto mude de grupo
+        dependendo da ordem das consultas.
     """
 
-    ml_id = produto["id"]
-
-    # =====================================================
-    # NÃO REPUBLICAR MUITO CEDO
-    # =====================================================
+    produto_id = str(
+        produto["id"]
+    )
 
     if foi_publicado_recentemente(
-        ml_id
+        produto_id
     ):
         return False
 
@@ -73,28 +77,22 @@ def salvar_oportunidade(
     cursor = conexao.cursor()
 
     try:
-        # =================================================
-        # VERIFICA SE JÁ EXISTE NA FILA
-        # =================================================
-
         cursor.execute(
             """
-            SELECT id
+            SELECT
+                id,
+                categoria
+
             FROM oportunidades
 
             WHERE ml_id = %s
             """,
-            (ml_id,)
+            (produto_id,)
         )
 
         existente = cursor.fetchone()
 
-        # =================================================
-        # ATUALIZA
-        # =================================================
-
         if existente:
-
             cursor.execute(
                 """
                 UPDATE oportunidades
@@ -105,7 +103,14 @@ def salvar_oportunidade(
                     imagem = %s,
                     fonte = %s,
                     ranking = %s,
-                    categoria = %s,
+
+                    categoria = CASE
+                        WHEN categoria IS NULL
+                          OR TRIM(categoria) = ''
+                        THEN %s
+                        ELSE categoria
+                    END,
+
                     atualizado_em =
                         CURRENT_TIMESTAMP
 
@@ -118,18 +123,13 @@ def salvar_oportunidade(
                     fonte,
                     produto.get("ranking"),
                     categoria,
-                    ml_id,
+                    produto_id,
                 )
             )
 
             novo = False
 
-        # =================================================
-        # INSERE
-        # =================================================
-
         else:
-
             cursor.execute(
                 """
                 INSERT INTO oportunidades (
@@ -159,7 +159,7 @@ def salvar_oportunidade(
                 )
                 """,
                 (
-                    ml_id,
+                    produto_id,
                     produto["tipo"],
                     produto["nome"],
                     produto.get("imagem"),
@@ -238,10 +238,12 @@ def contar_oportunidades():
     conexao = conectar()
     cursor = conexao.cursor()
 
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT COUNT(*) AS total
         FROM oportunidades
-    """)
+        """
+    )
 
     resultado = cursor.fetchone()
 
