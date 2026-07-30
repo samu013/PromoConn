@@ -2,97 +2,76 @@ from mercadolivre.client import MercadoLivreClient
 
 
 class Highlights:
-
     def __init__(self):
         self.client = MercadoLivreClient()
 
-    def buscar(self, categoria_id):
-        endpoint = (
-            f"/highlights/MLB/category/{categoria_id}"
-        )
+    @staticmethod
+    def _primeira_imagem(item):
+        imagem = item.get("imagem") or item.get("picture") or item.get("thumbnail")
+        if imagem:
+            return imagem
 
-        resposta = self.client.get(endpoint)
+        pictures = item.get("pictures")
+        if isinstance(pictures, list) and pictures:
+            primeira = pictures[0]
+            if isinstance(primeira, dict):
+                return primeira.get("url") or primeira.get("secure_url") or primeira.get("id")
+            return primeira
+        return None
+
+    @staticmethod
+    def _normalizar_item(item, posicao):
+        if not isinstance(item, dict):
+            return None
+
+        ml_id = item.get("id") or item.get("item_id") or item.get("product_id") or item.get("user_product_id")
+        tipo = item.get("type") or item.get("tipo") or item.get("entity_type")
+        nome = item.get("name") or item.get("title") or item.get("nome")
+        categoria_id = item.get("category_id") or item.get("category")
+
+        if isinstance(categoria_id, dict):
+            categoria_id = categoria_id.get("id")
+
+        if not ml_id or not nome:
+            return None
+
+        return {
+            "id": str(ml_id),
+            "tipo": tipo or "PRODUCT",
+            "nome": nome,
+            "imagem": Highlights._primeira_imagem(item),
+            "ranking": item.get("position") or item.get("ranking") or item.get("rank") or posicao,
+            "category_id": categoria_id,
+            "dados_originais": item,
+        }
+
+    def buscar(self, categoria_id):
+        resposta = self.client.get(f"/highlights/MLB/category/{categoria_id}")
 
         if resposta.status_code != 200:
-            print(
-                f"❌ Erro ao buscar highlights: "
-                f"{resposta.status_code}"
+            raise RuntimeError(
+                f"Erro ao buscar Highlights da categoria {categoria_id}: "
+                f"HTTP {resposta.status_code} - {resposta.text[:500]}"
             )
-            print(resposta.text)
+
+        try:
+            dados = resposta.json()
+        except Exception as erro:
+            raise RuntimeError("A resposta dos Highlights não contém um JSON válido.") from erro
+
+        if isinstance(dados, dict):
+            conteudo = dados.get("content") or dados.get("results") or dados.get("items") or []
+        elif isinstance(dados, list):
+            conteudo = dados
+        else:
+            conteudo = []
+
+        if not isinstance(conteudo, list):
             return []
 
-        resultados = resposta.json().get("content", [])
-
         produtos = []
-
-        for resultado in resultados:
-
-            produto_id = resultado.get("id")
-            tipo = resultado.get("type")
-            posicao = resultado.get("position")
-
-            detalhe = self._buscar_detalhe(
-                produto_id,
-                tipo
-            )
-
-            if not detalhe:
-                continue
-
-            produtos.append({
-                "id": produto_id,
-                "tipo": tipo,
-                "ranking": posicao,
-                "nome": detalhe.get("nome"),
-                "imagem": detalhe.get("imagem"),
-                "user_id": detalhe.get("user_id"),
-            })
-
+        for posicao, item in enumerate(conteudo, start=1):
+            produto = self._normalizar_item(item, posicao)
+            if produto:
+                produtos.append(produto)
         return produtos
-
-    def _buscar_detalhe(self, produto_id, tipo):
-
-        if tipo == "PRODUCT":
-
-            resposta = self.client.get(
-                f"/products/{produto_id}"
-            )
-
-            if resposta.status_code != 200:
-                return None
-
-            dados = resposta.json()
-
-            imagens = dados.get("pictures", [])
-
-            imagem = None
-
-            if imagens:
-                imagem = imagens[0].get("url")
-
-            return {
-                "nome": dados.get("name"),
-                "imagem": imagem,
-                "user_id": None,
-            }
-
-        if tipo == "USER_PRODUCT":
-
-            resposta = self.client.get(
-                f"/user-products/{produto_id}"
-            )
-
-            if resposta.status_code != 200:
-                return None
-
-            dados = resposta.json()
-
-            thumbnail = dados.get("thumbnail") or {}
-
-            return {
-                "nome": dados.get("name"),
-                "imagem": thumbnail.get("secure_url"),
-                "user_id": dados.get("user_id"),
-            }
-
-        return None
