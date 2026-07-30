@@ -1,5 +1,5 @@
--- Este arquivo cria somente as tabelas básicas.
--- As colunas e os índices de compatibilidade são aplicados em migration.sql.
+-- Cria apenas tabelas básicas. As colunas adicionais e índices
+-- são aplicados posteriormente por migration.sql.
 
 CREATE TABLE IF NOT EXISTS oportunidades (
     id BIGSERIAL PRIMARY KEY,
@@ -44,5 +44,5 @@ CREATE TABLE IF NOT EXISTS tendencias (
     palavra VARCHAR(255) NOT NULL,
     url TEXT,
     posicao INTEGER,
-    descoberta_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    descoberto_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

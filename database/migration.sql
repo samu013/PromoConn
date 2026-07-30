@@ -24,7 +24,8 @@ WHERE atualizado_em IS NULL;
 ALTER TABLE oportunidades
 ALTER COLUMN atualizado_em SET DEFAULT CURRENT_TIMESTAMP;
 
--- HISTÓRICO
+
+-- HISTÓRICO DE PUBLICAÇÕES
 ALTER TABLE historico_publicacoes
 ADD COLUMN IF NOT EXISTS origem VARCHAR(50);
 
@@ -47,6 +48,7 @@ ADD COLUMN IF NOT EXISTS chat_id VARCHAR(100);
 ALTER TABLE historico_publicacoes
 ADD COLUMN IF NOT EXISTS mensagem_id VARCHAR(100);
 
+
 -- PRODUTOS
 ALTER TABLE produtos
 ADD COLUMN IF NOT EXISTS origem VARCHAR(50);
@@ -64,6 +66,7 @@ ALTER COLUMN origem SET NOT NULL;
 ALTER TABLE produtos
 ADD COLUMN IF NOT EXISTS categoria VARCHAR(100);
 
+
 -- TENDÊNCIAS
 ALTER TABLE tendencias
 ADD COLUMN IF NOT EXISTS ativa BOOLEAN;
@@ -79,20 +82,50 @@ ALTER TABLE tendencias
 ALTER COLUMN ativa SET NOT NULL;
 
 ALTER TABLE tendencias
-ADD COLUMN IF NOT EXISTS atualizada_em TIMESTAMP;
+ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMP;
 
-UPDATE tendencias
-SET atualizada_em = COALESCE(descoberta_em, CURRENT_TIMESTAMP)
-WHERE atualizada_em IS NULL;
+-- Compatibilidade com bancos que possuem descoberto_em ou descoberta_em.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'tendencias'
+          AND column_name = 'descoberto_em'
+    ) THEN
+        EXECUTE '
+            UPDATE tendencias
+            SET atualizado_em = COALESCE(descoberto_em, CURRENT_TIMESTAMP)
+            WHERE atualizado_em IS NULL
+        ';
+
+    ELSIF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'tendencias'
+          AND column_name = 'descoberta_em'
+    ) THEN
+        EXECUTE '
+            UPDATE tendencias
+            SET atualizado_em = COALESCE(descoberta_em, CURRENT_TIMESTAMP)
+            WHERE atualizado_em IS NULL
+        ';
+
+    ELSE
+        UPDATE tendencias
+        SET atualizado_em = CURRENT_TIMESTAMP
+        WHERE atualizado_em IS NULL;
+    END IF;
+END
+$$;
 
 ALTER TABLE tendencias
-ALTER COLUMN atualizada_em SET DEFAULT CURRENT_TIMESTAMP;
+ALTER COLUMN atualizado_em SET DEFAULT CURRENT_TIMESTAMP;
 
--- Remove índices únicos antigos incompatíveis, quando existirem.
-DROP INDEX IF EXISTS ux_oportunidades_origem_ml_id;
-DROP INDEX IF EXISTS ux_produtos_origem_item_id;
 
--- Remove duplicados antes de criar índices únicos compostos.
+-- Remove duplicados antes dos índices únicos.
 DELETE FROM oportunidades a
 USING oportunidades b
 WHERE a.id < b.id
@@ -105,6 +138,8 @@ WHERE a.id < b.id
   AND a.origem = b.origem
   AND a.item_id = b.item_id;
 
+
+-- ÍNDICES
 CREATE UNIQUE INDEX IF NOT EXISTS ux_oportunidades_origem_ml_id
 ON oportunidades (origem, ml_id);
 
