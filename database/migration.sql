@@ -1,11 +1,12 @@
 BEGIN;
 
+-- OPORTUNIDADES
 ALTER TABLE oportunidades
 ADD COLUMN IF NOT EXISTS origem VARCHAR(50);
 
 UPDATE oportunidades
 SET origem = 'mercadolivre'
-WHERE origem IS NULL OR TRIM(origem) = '';
+WHERE origem IS NULL OR BTRIM(origem) = '';
 
 ALTER TABLE oportunidades
 ALTER COLUMN origem SET DEFAULT 'mercadolivre';
@@ -23,12 +24,13 @@ WHERE atualizado_em IS NULL;
 ALTER TABLE oportunidades
 ALTER COLUMN atualizado_em SET DEFAULT CURRENT_TIMESTAMP;
 
+-- HISTÓRICO
 ALTER TABLE historico_publicacoes
 ADD COLUMN IF NOT EXISTS origem VARCHAR(50);
 
 UPDATE historico_publicacoes
 SET origem = 'mercadolivre'
-WHERE origem IS NULL OR TRIM(origem) = '';
+WHERE origem IS NULL OR BTRIM(origem) = '';
 
 ALTER TABLE historico_publicacoes
 ALTER COLUMN origem SET DEFAULT 'mercadolivre';
@@ -45,12 +47,13 @@ ADD COLUMN IF NOT EXISTS chat_id VARCHAR(100);
 ALTER TABLE historico_publicacoes
 ADD COLUMN IF NOT EXISTS mensagem_id VARCHAR(100);
 
+-- PRODUTOS
 ALTER TABLE produtos
 ADD COLUMN IF NOT EXISTS origem VARCHAR(50);
 
 UPDATE produtos
 SET origem = 'mercadolivre'
-WHERE origem IS NULL OR TRIM(origem) = '';
+WHERE origem IS NULL OR BTRIM(origem) = '';
 
 ALTER TABLE produtos
 ALTER COLUMN origem SET DEFAULT 'mercadolivre';
@@ -61,6 +64,7 @@ ALTER COLUMN origem SET NOT NULL;
 ALTER TABLE produtos
 ADD COLUMN IF NOT EXISTS categoria VARCHAR(100);
 
+-- TENDÊNCIAS
 ALTER TABLE tendencias
 ADD COLUMN IF NOT EXISTS ativa BOOLEAN;
 
@@ -83,6 +87,23 @@ WHERE atualizada_em IS NULL;
 
 ALTER TABLE tendencias
 ALTER COLUMN atualizada_em SET DEFAULT CURRENT_TIMESTAMP;
+
+-- Remove índices únicos antigos incompatíveis, quando existirem.
+DROP INDEX IF EXISTS ux_oportunidades_origem_ml_id;
+DROP INDEX IF EXISTS ux_produtos_origem_item_id;
+
+-- Remove duplicados antes de criar índices únicos compostos.
+DELETE FROM oportunidades a
+USING oportunidades b
+WHERE a.id < b.id
+  AND a.origem = b.origem
+  AND a.ml_id = b.ml_id;
+
+DELETE FROM produtos a
+USING produtos b
+WHERE a.id < b.id
+  AND a.origem = b.origem
+  AND a.item_id = b.item_id;
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_oportunidades_origem_ml_id
 ON oportunidades (origem, ml_id);
