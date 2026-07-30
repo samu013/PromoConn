@@ -1,0 +1,11 @@
+2026/07/26-11:52:14.302 433c Reusing MANIFEST C:\Users\Samue\BotPromocoes\shein_profile\Default\IndexedDB\https_m.shein.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/07/26-11:52:14.303 433c Recovering log #7
+2026/07/26-11:52:14.307 433c Reusing old log C:\Users\Samue\BotPromocoes\shein_profile\Default\IndexedDB\https_m.shein.com_0.indexeddb.leveldb/000007.log 
+2026/07/26-11:52:15.903 eb4 Level-0 table #12: started
+2026/07/26-11:52:15.906 eb4 Level-0 table #12: 52183 bytes OK
+2026/07/26-11:52:15.907 eb4 Delete type=0 #7
+2026/07/26-11:52:15.908 eb4 Manual compaction at level-0 from '\x00\x0a\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x0b\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/07/26-11:52:16.616 433c Compacting 1@1 + 1@2 files
+2026/07/26-11:52:16.619 433c Generated table #13@1: 139 keys, 7609 bytes
+2026/07/26-11:52:16.619 433c Compacted 1@1 + 1@2 files => 7609 bytes
+2026/07/26-11:52:16.620 433c compacted to: files[ 0 0 1 0 0 0 0 ]
