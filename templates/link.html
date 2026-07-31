@@ -41,6 +41,22 @@ PromoConn - Aguardando Link
         color: var(--azul-escuro);
         font-weight: bold;
     }
+
+    .form-excluir {
+        margin-top: 10px;
+    }
+
+    .botao-excluir {
+        width: 100%;
+        background: #d93025;
+        color: #ffffff;
+        border: 1px solid #d93025;
+    }
+
+    .botao-excluir:hover {
+        background: #b3261e;
+        border-color: #b3261e;
+    }
 </style>
 {% endblock %}
 
@@ -399,6 +415,68 @@ PromoConn - Aguardando Link
                             style="width: 100%; margin-top: 12px;"
                         >
                             Preparar promoção
+                        </button>
+
+                    </form>
+
+
+                    <form
+                        class="form-excluir"
+                        method="POST"
+
+                        action="{{
+                            url_for(
+                                'excluir_oportunidade_web',
+                                oportunidade_id=
+                                    produto.id
+                            )
+                        }}"
+
+                        onsubmit="
+                            return confirm(
+                                'Deseja realmente excluir este produto?'
+                            );
+                        "
+                    >
+
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="{{ csrf_token() }}"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="retorno_busca"
+                            value="{{ busca }}"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="retorno_categoria"
+                            value="{{ categoria_selecionada }}"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="retorno_ordem"
+                            value="{{ ordem_selecionada }}"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="retorno_pagina"
+                            value="{{ pagina }}"
+                        >
+
+                        <button
+                            type="submit"
+                            class="
+                                botao
+                                botao-excluir
+                            "
+                        >
+                            🗑️ Excluir produto
                         </button>
 
                     </form>

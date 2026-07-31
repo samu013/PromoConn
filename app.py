@@ -38,6 +38,10 @@ from database.database import (
     criar_tabelas,
 )
 
+from database.oportunidades import (
+    excluir_oportunidade,
+)
+
 from services.pontuacao import (
     calcular_oportunidades,
 )
@@ -1312,6 +1316,52 @@ def salvar_oferta(
             ),
         )
     )
+
+
+# =========================================================
+# EXCLUIR OPORTUNIDADE
+# =========================================================
+
+@app.route(
+    "/oportunidade/"
+    "<int:oportunidade_id>/excluir",
+
+    methods=["POST"],
+)
+@login_obrigatorio
+def excluir_oportunidade_web(
+    oportunidade_id
+):
+    excluir_oportunidade(
+        oportunidade_id
+    )
+
+    return redirect(
+        url_for(
+            "pagina_link",
+
+            busca=request.form.get(
+                "retorno_busca",
+                ""
+            ),
+
+            categoria=request.form.get(
+                "retorno_categoria",
+                ""
+            ),
+
+            ordem=request.form.get(
+                "retorno_ordem",
+                "score"
+            ),
+
+            pagina=request.form.get(
+                "retorno_pagina",
+                1
+            ),
+        )
+    )
+
 
 # =========================================================
 # PUBLICAÇÃO MANUAL
