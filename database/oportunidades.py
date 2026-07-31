@@ -145,3 +145,30 @@ def salvar_oportunidade(
     finally:
         cursor.close()
         conexao.close()
+
+def excluir_oportunidade(
+    oportunidade_id
+):
+    conexao = conectar()
+    cursor = conexao.cursor()
+
+    try:
+        cursor.execute(
+            """
+            DELETE FROM oportunidades
+            WHERE id = %s
+            """,
+            (oportunidade_id,),
+        )
+
+        conexao.commit()
+
+        return cursor.rowcount > 0
+
+    except Exception:
+        conexao.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        conexao.close()
