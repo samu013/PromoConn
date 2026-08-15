@@ -46,3 +46,21 @@ CREATE TABLE IF NOT EXISTS tendencias (
     posicao INTEGER,
     descoberto_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS mercadolivre_tokens (
+    provedor VARCHAR(50) PRIMARY KEY,
+
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+
+    expires_in INTEGER,
+    expira_em TIMESTAMPTZ,
+
+    criado_em TIMESTAMPTZ
+        NOT NULL
+        DEFAULT CURRENT_TIMESTAMP,
+
+    atualizado_em TIMESTAMPTZ
+        NOT NULL
+        DEFAULT CURRENT_TIMESTAMP
+);
