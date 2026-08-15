@@ -55,6 +55,11 @@ from services.instagram.seletor import (
     buscar_top_promocoes_do_dia,
 )
 
+from services.instagram.gerador_artes import (
+    gerar_artes_top,
+    listar_artes_do_dia,
+)
+
 
 # =========================================================
 # ENV
@@ -1115,6 +1120,10 @@ def pagina_instagram():
         )
     )
 
+    artes = (
+        listar_artes_do_dia()
+    )
+
     return render_template(
         "instagram.html",
 
@@ -1139,7 +1148,84 @@ def pagina_instagram():
                 "data_referencia"
             ],
 
+        artes=artes,
+
+        gerado=(
+            request.args.get(
+                "gerado"
+            )
+            == "1"
+        ),
+
+        erro_geracao=
+            request.args.get(
+                "erro",
+                "",
+            ),
+
         **metricas,
+    )
+
+
+@app.route(
+    "/instagram/gerar",
+    methods=["POST"],
+)
+@login_obrigatorio
+def gerar_artes_instagram():
+    resultado = (
+        buscar_top_promocoes_do_dia(
+            quantidade=5,
+            max_por_categoria=2,
+        )
+    )
+
+    produtos = (
+        resultado[
+            "produtos"
+        ]
+    )
+
+    if not produtos:
+        return redirect(
+            url_for(
+                "pagina_instagram",
+                erro=(
+                    "Nenhuma promoção válida "
+                    "para gerar arte."
+                ),
+            )
+        )
+
+    try:
+        gerar_artes_top(
+            produtos
+        )
+
+    except Exception as erro:
+        print(
+            "Erro ao gerar artes "
+            "do Instagram:"
+        )
+
+        print(
+            erro
+        )
+
+        return redirect(
+            url_for(
+                "pagina_instagram",
+                erro=str(
+                    erro
+                ),
+            )
+        )
+
+    return redirect(
+        url_for(
+            "pagina_instagram",
+            gerado=1,
+        )
     )
 
 

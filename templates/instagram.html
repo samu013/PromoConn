@@ -8,19 +8,54 @@
     <div>
         <h2>Instagram</h2>
         <p>
-            Seleção automática das 5 melhores promoções publicadas
-            no dia {{ data_referencia }}.
+            Top promoções do dia {{ data_referencia }} e geração
+            automática das artes no padrão PromoConn.
         </p>
     </div>
 
-    <a
-        href="{{ url_for('pagina_instagram') }}"
-        class="botao botao-azul"
-    >
-        {{ icon("refresh") }}
-        Recalcular top 5
-    </a>
+    <div class="instagram-topo-acoes">
+        <a
+            href="{{ url_for('pagina_instagram') }}"
+            class="botao botao-secundario"
+        >
+            {{ icon("refresh") }}
+            Recalcular top 5
+        </a>
+
+        <form
+            method="POST"
+            action="{{ url_for('gerar_artes_instagram') }}"
+            style="margin: 0;"
+        >
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+            <button
+                type="submit"
+                class="botao botao-primario"
+                {% if not produtos %}disabled{% endif %}
+            >
+                Gerar artes
+            </button>
+        </form>
+    </div>
 </div>
+
+{% if gerado %}
+    <div class="instagram-alerta sucesso">
+        ✅ Artes geradas com sucesso.
+    </div>
+{% endif %}
+
+{% if erro_geracao %}
+    <div class="instagram-alerta erro">
+        <strong>Não foi possível gerar as artes.</strong>
+        <span>{{ erro_geracao }}</span>
+    </div>
+{% endif %}
 
 <div class="instagram-resumo">
     <div class="instagram-resumo-item">
@@ -42,6 +77,7 @@
 <div class="painel-card">
     <div class="painel-card-titulo">
         <span>Top promoções do dia</span>
+
         <span class="contador-badge">
             {{ produtos|length }}/5
         </span>
@@ -132,15 +168,102 @@
     {% endif %}
 </div>
 
-<div class="instagram-proxima-etapa">
-    <strong>Próxima etapa</strong>
-    <p>
-        Depois de validar esta seleção, o botão de geração das artes
-        será conectado a estes mesmos 5 produtos.
-    </p>
-</div>
+{% if artes %}
+    <section class="instagram-artes">
+        <div class="secao-titulo">
+            <div>
+                <h3>Artes geradas</h3>
+                <span>
+                    {{ artes|length }} imagem(ns) em 1080 × 1350.
+                </span>
+            </div>
+        </div>
+
+        <div class="instagram-artes-grid">
+            {% for arte in artes %}
+                <article class="instagram-arte-card">
+                    <a
+                        href="{{ url_for('static', filename=arte.arquivo) }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="instagram-arte-preview"
+                    >
+                        <img
+                            src="{{ url_for('static', filename=arte.arquivo) }}"
+                            alt="Arte Instagram #{{ arte.posicao }}"
+                            loading="lazy"
+                        >
+                    </a>
+
+                    <div class="instagram-arte-rodape">
+                        <strong>
+                            Promoção #{{ arte.posicao }}
+                        </strong>
+
+                        <div class="instagram-arte-acoes">
+                            <a
+                                href="{{ url_for('static', filename=arte.arquivo) }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="botao botao-secundario"
+                            >
+                                Visualizar
+                            </a>
+
+                            <a
+                                href="{{ url_for('static', filename=arte.arquivo) }}"
+                                download
+                                class="botao botao-azul"
+                            >
+                                Baixar
+                            </a>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+{% else %}
+    <div class="instagram-proxima-etapa">
+        <strong>Artes ainda não geradas</strong>
+        <p>
+            Confira o Top do dia e clique em
+            <strong>Gerar artes</strong>.
+        </p>
+    </div>
+{% endif %}
 
 <style>
+    .instagram-topo-acoes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        justify-content: flex-end;
+    }
+
+    .instagram-alerta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 18px;
+        padding: 13px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+    }
+
+    .instagram-alerta.sucesso {
+        border: 1px solid #bfe8ca;
+        background: #effbf2;
+        color: #137a35;
+    }
+
+    .instagram-alerta.erro {
+        border: 1px solid #f1c0c0;
+        background: #fff3f3;
+        color: #a92b2b;
+    }
+
     .instagram-resumo {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -285,6 +408,66 @@
         color: var(--texto-suave);
     }
 
+    .instagram-artes {
+        margin-top: 26px;
+    }
+
+    .instagram-artes-grid {
+        display: grid;
+        grid-template-columns: repeat(
+            auto-fill,
+            minmax(245px, 1fr)
+        );
+        gap: 18px;
+    }
+
+    .instagram-arte-card {
+        overflow: hidden;
+        background: white;
+        border: 1px solid var(--borda);
+        border-radius: 12px;
+        box-shadow: var(--sombra);
+    }
+
+    .instagram-arte-preview {
+        display: block;
+        aspect-ratio: 4 / 5;
+        overflow: hidden;
+        background: #eef3f8;
+    }
+
+    .instagram-arte-preview img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .instagram-arte-rodape {
+        padding: 13px;
+    }
+
+    .instagram-arte-rodape > strong {
+        display: block;
+        margin-bottom: 10px;
+        color: var(--azul-900);
+    }
+
+    .instagram-arte-acoes {
+        display: flex;
+        gap: 7px;
+    }
+
+    .instagram-arte-acoes .botao {
+        flex: 1;
+    }
+
+    button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+        transform: none !important;
+    }
+
     @media (max-width: 850px) {
         .instagram-resumo {
             grid-template-columns: 1fr;
@@ -306,6 +489,15 @@
     }
 
     @media (max-width: 560px) {
+        .cabecalho-pagina {
+            flex-direction: column;
+        }
+
+        .instagram-topo-acoes {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
         .instagram-produto {
             grid-template-columns: 42px minmax(0, 1fr);
         }
@@ -319,6 +511,10 @@
         .instagram-info,
         .instagram-acoes {
             grid-column: 2;
+        }
+
+        .instagram-artes-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
