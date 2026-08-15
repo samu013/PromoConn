@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Instagram | PromoConn{% endblock %}
+
+{% block content %}
+
+<div class="cabecalho-pagina">
+    <div>
+        <h2>Instagram</h2>
+        <p>
+            Seleção automática das 5 melhores promoções publicadas
+            no dia {{ data_referencia }}.
+        </p>
+    </div>
+
+    <a
+        href="{{ url_for('pagina_instagram') }}"
+        class="botao botao-azul"
+    >
+        {{ icon("refresh") }}
+        Recalcular top 5
+    </a>
+</div>
+
+<div class="instagram-resumo">
+    <div class="instagram-resumo-item">
+        <strong>{{ total_publicados_hoje }}</strong>
+        <span>Publicadas hoje</span>
+    </div>
+
+    <div class="instagram-resumo-item">
+        <strong>{{ total_candidatos }}</strong>
+        <span>Candidatas válidas</span>
+    </div>
+
+    <div class="instagram-resumo-item">
+        <strong>{{ produtos|length }}</strong>
+        <span>Selecionadas</span>
+    </div>
+</div>
+
+<div class="painel-card">
+    <div class="painel-card-titulo">
+        <span>Top promoções do dia</span>
+        <span class="contador-badge">
+            {{ produtos|length }}/5
+        </span>
+    </div>
+
+    {% if produtos %}
+        <div class="instagram-lista">
+            {% for produto in produtos %}
+                <article class="instagram-produto">
+                    <div class="instagram-posicao">
+                        #{{ loop.index }}
+                    </div>
+
+                    <div class="instagram-imagem">
+                        <img
+                            src="{{ produto.imagem }}"
+                            alt="{{ produto.nome }}"
+                            loading="lazy"
+                        >
+                    </div>
+
+                    <div class="instagram-info">
+                        <div class="badges">
+                            <span class="badge badge-score">
+                                {{ produto.categoria or 'Geral' }}
+                            </span>
+
+                            {% if produto.desconto_instagram > 0 %}
+                                <span class="badge badge-pronto">
+                                    {{ '%.0f'|format(produto.desconto_instagram) }}% OFF
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <h3>{{ produto.nome }}</h3>
+
+                        <div class="instagram-precos">
+                            {% if produto.preco_original %}
+                                <span class="instagram-preco-antigo">
+                                    R$ {{ '%.2f'|format(produto.preco_original)|replace('.', ',') }}
+                                </span>
+                            {% endif %}
+
+                            <strong>
+                                R$ {{ '%.2f'|format(produto.preco)|replace('.', ',') }}
+                            </strong>
+                        </div>
+
+                        <div class="instagram-meta">
+                            <span>
+                                Score Instagram:
+                                <strong>{{ '%.1f'|format(produto.score_instagram) }}</strong>
+                            </span>
+
+                            {% if produto.ranking is not none %}
+                                <span>
+                                    Ranking ML:
+                                    <strong>#{{ produto.ranking }}</strong>
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="instagram-acoes">
+                        {% if produto.link_produto %}
+                            <a
+                                href="{{ produto.link_produto }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="botao botao-secundario"
+                            >
+                                {{ icon("external") }}
+                                Produto
+                            </a>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="instagram-vazio">
+            <strong>Nenhuma promoção disponível hoje.</strong>
+            <p>
+                Para entrar no Top 5, a publicação precisa ter
+                imagem e preço válidos no histórico.
+            </p>
+        </div>
+    {% endif %}
+</div>
+
+<div class="instagram-proxima-etapa">
+    <strong>Próxima etapa</strong>
+    <p>
+        Depois de validar esta seleção, o botão de geração das artes
+        será conectado a estes mesmos 5 produtos.
+    </p>
+</div>
+
+<style>
+    .instagram-resumo {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+
+    .instagram-resumo-item {
+        padding: 18px 20px;
+        background: white;
+        border: 1px solid var(--borda);
+        border-radius: 12px;
+        box-shadow: var(--sombra);
+    }
+
+    .instagram-resumo-item strong {
+        display: block;
+        color: var(--azul-900);
+        font-size: 30px;
+        font-weight: 900;
+    }
+
+    .instagram-resumo-item span {
+        display: block;
+        margin-top: 3px;
+        color: var(--texto-suave);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .instagram-lista {
+        display: grid;
+    }
+
+    .instagram-produto {
+        display: grid;
+        grid-template-columns: 58px 110px minmax(0, 1fr) 125px;
+        gap: 16px;
+        align-items: center;
+        padding: 18px;
+        border-bottom: 1px solid var(--borda);
+    }
+
+    .instagram-produto:last-child {
+        border-bottom: none;
+    }
+
+    .instagram-posicao {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: var(--azul-900);
+        color: white;
+        font-weight: 900;
+        font-size: 16px;
+    }
+
+    .instagram-imagem {
+        width: 105px;
+        height: 105px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        padding: 6px;
+        background: white;
+        border: 1px solid var(--borda);
+        border-radius: 10px;
+    }
+
+    .instagram-imagem img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .instagram-info h3 {
+        margin: 0 0 10px;
+        color: var(--texto);
+        font-size: 15px;
+        line-height: 1.45;
+    }
+
+    .instagram-precos {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .instagram-precos strong {
+        color: var(--verde-700);
+        font-size: 22px;
+        font-weight: 900;
+    }
+
+    .instagram-preco-antigo {
+        color: var(--texto-suave);
+        font-size: 12px;
+        text-decoration: line-through;
+    }
+
+    .instagram-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        margin-top: 9px;
+        color: var(--texto-suave);
+        font-size: 11px;
+    }
+
+    .instagram-acoes {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .instagram-vazio {
+        padding: 48px 24px;
+        text-align: center;
+        color: var(--texto-suave);
+    }
+
+    .instagram-vazio strong {
+        color: var(--azul-900);
+    }
+
+    .instagram-proxima-etapa {
+        margin-top: 18px;
+        padding: 18px 20px;
+        border: 1px solid #dce9ff;
+        border-radius: 12px;
+        background: #f4f8ff;
+        color: var(--azul-900);
+    }
+
+    .instagram-proxima-etapa p {
+        margin: 5px 0 0;
+        color: var(--texto-suave);
+    }
+
+    @media (max-width: 850px) {
+        .instagram-resumo {
+            grid-template-columns: 1fr;
+        }
+
+        .instagram-produto {
+            grid-template-columns: 48px 85px minmax(0, 1fr);
+        }
+
+        .instagram-imagem {
+            width: 80px;
+            height: 80px;
+        }
+
+        .instagram-acoes {
+            grid-column: 2 / -1;
+            justify-content: flex-start;
+        }
+    }
+
+    @media (max-width: 560px) {
+        .instagram-produto {
+            grid-template-columns: 42px minmax(0, 1fr);
+        }
+
+        .instagram-imagem {
+            grid-column: 2;
+            width: 110px;
+            height: 110px;
+        }
+
+        .instagram-info,
+        .instagram-acoes {
+            grid-column: 2;
+        }
+    }
+</style>
+
+{% endblock %}

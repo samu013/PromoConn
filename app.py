@@ -51,6 +51,10 @@ from services.publicador import (
     publicar_proxima_promocao,
 )
 
+from services.instagram.seletor import (
+    buscar_top_promocoes_do_dia,
+)
+
 
 # =========================================================
 # ENV
@@ -1086,6 +1090,54 @@ def pagina_publicados():
 
         total_filtrado=
             total_filtrado,
+
+        **metricas,
+    )
+
+
+# =========================================================
+# INSTAGRAM
+# =========================================================
+
+@app.route(
+    "/instagram"
+)
+@login_obrigatorio
+def pagina_instagram():
+    metricas = (
+        obter_metricas()
+    )
+
+    resultado = (
+        buscar_top_promocoes_do_dia(
+            quantidade=5,
+            max_por_categoria=2,
+        )
+    )
+
+    return render_template(
+        "instagram.html",
+
+        pagina_ativa=
+            "instagram",
+
+        produtos=
+            resultado["produtos"],
+
+        total_publicados_hoje=
+            resultado[
+                "total_publicados_hoje"
+            ],
+
+        total_candidatos=
+            resultado[
+                "total_candidatos"
+            ],
+
+        data_referencia=
+            resultado[
+                "data_referencia"
+            ],
 
         **metricas,
     )

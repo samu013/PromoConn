@@ -315,9 +315,9 @@
 
             grid-template-columns:
                 repeat(
-                    5,
+                    6,
                     minmax(
-                        130px,
+                        120px,
                         1fr
                     )
                 );
@@ -1779,9 +1779,9 @@
 
                 grid-template-columns:
                     repeat(
-                        5,
+                        6,
                         minmax(
-                            155px,
+                            145px,
                             1fr
                         )
                     );
@@ -1945,6 +1945,13 @@
             <circle cx="12" cy="12" r="1.5"/>
         </svg>
 
+    {% elif nome == "instagram" %}
+        <svg viewBox="0 0 24 24">
+            <rect x="4" y="4" width="16" height="16" rx="5"/>
+            <circle cx="12" cy="12" r="3.5"/>
+            <circle cx="17.2" cy="6.8" r="0.8" fill="currentColor" stroke="none"/>
+        </svg>
+
     {% elif nome == "bolt" %}
         <svg viewBox="0 0 24 24">
             <path d="m13 2-8 12h6l-1 8 9-13h-6V2Z"/>
@@ -2099,6 +2106,14 @@
             >
                 {{ icon("check") }}
                 Publicados
+            </a>
+
+            <a
+                href="{{ url_for('pagina_instagram') }}"
+                class="nav-link {% if pagina_ativa == 'instagram' %}ativo{% endif %}"
+            >
+                {{ icon("instagram") }}
+                Instagram
             </a>
 
             <a
