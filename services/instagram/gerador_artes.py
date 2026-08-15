@@ -1,5 +1,4 @@
 import io
-import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -21,14 +20,14 @@ FUSO_BRASIL = ZoneInfo(
 LARGURA = 1080
 ALTURA = 1350
 
-AZUL = "#06143D"
-AZUL_CLARO = "#128BDD"
-VERDE = "#73C82D"
-VERDE_CLARO = "#91E64F"
-AMARELO = "#FFC52B"
+AZUL = "#00154D"
+AZUL_TEXTO = "#03164D"
+AZUL_PRECO = "#128FD5"
+VERDE = "#79C92C"
+VERDE_CLARO = "#9BE95C"
+AMARELO = "#FFB900"
 BRANCO = "#FFFFFF"
 PRETO = "#111111"
-CINZA = "#667085"
 
 PROJECT_ROOT = (
     Path(__file__)
@@ -43,14 +42,11 @@ STATIC_ROOT = (
     / "static"
 )
 
-IMG_ROOT = (
+TEMPLATE_PATH = (
     STATIC_ROOT
     / "img"
-)
-
-INSTAGRAM_IMG_ROOT = (
-    IMG_ROOT
     / "instagram"
+    / "modelo_base.png"
 )
 
 GERADAS_ROOT = (
@@ -59,38 +55,35 @@ GERADAS_ROOT = (
     / "geradas"
 )
 
-LOGO_PATH = (
-    IMG_ROOT
-    / "logo-promoconn.png"
-)
 
-MASCOTE_FEMININA = (
-    INSTAGRAM_IMG_ROOT
-    / "mascote_feminina.png"
-)
-
-MASCOTE_MASCULINO = (
-    INSTAGRAM_IMG_ROOT
-    / "mascote_masculino.png"
-)
-
+# =========================================================
+# FONTES
+# =========================================================
 
 def _fonte(
     tamanho,
     bold=False,
+    condensed=False,
 ):
     candidatos = []
+
+    if condensed and bold:
+        candidatos.extend([
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf",
+            "/usr/share/fonts/truetype/paratype/PTN77F.ttf",
+        ])
 
     if bold:
         candidatos.extend([
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf",
+            "/usr/share/fonts/opentype/inter/InterDisplay-Bold.otf",
             "C:/Windows/Fonts/arialbd.ttf",
         ])
+
     else:
         candidatos.extend([
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-            "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+            "/usr/share/fonts/opentype/inter/Inter-Regular.otf",
             "C:/Windows/Fonts/arial.ttf",
         ])
 
@@ -104,12 +97,13 @@ def _fonte(
     return ImageFont.load_default()
 
 
+# =========================================================
+# TEXTO
+# =========================================================
+
 def _moeda(
     valor
 ):
-    if valor is None:
-        return ""
-
     valor = float(
         valor
     )
@@ -130,34 +124,7 @@ def _moeda(
         )
     )
 
-    return (
-        f"R${texto}"
-    )
-
-
-def _normalizar_nome_arquivo(
-    texto
-):
-    texto = str(
-        texto
-        or "produto"
-    )
-
-    texto = re.sub(
-        r"[^a-zA-Z0-9_-]+",
-        "_",
-        texto,
-    )
-
-    texto = re.sub(
-        r"_+",
-        "_",
-        texto,
-    )
-
-    return texto.strip(
-        "_"
-    )[:60] or "produto"
+    return f"R${texto}"
 
 
 def _quebrar_texto(
@@ -165,7 +132,7 @@ def _quebrar_texto(
     texto,
     font,
     largura_maxima,
-    max_linhas=3,
+    max_linhas,
 ):
     palavras = (
         str(
@@ -196,10 +163,7 @@ def _quebrar_texto(
             - bbox[0]
         )
 
-        if (
-            largura
-            <= largura_maxima
-        ):
+        if largura <= largura_maxima:
             atual = teste
             continue
 
@@ -210,25 +174,168 @@ def _quebrar_texto(
 
         atual = palavra
 
-        if (
-            len(linhas)
-            >= max_linhas - 1
-        ):
+        if len(linhas) >= max_linhas - 1:
             break
 
-    if (
-        atual
-        and len(linhas)
-        < max_linhas
-    ):
+    if atual and len(linhas) < max_linhas:
         linhas.append(
             atual
         )
 
-    return linhas[
-        :max_linhas
-    ]
+    return linhas[:max_linhas]
 
+
+def _reduzir_titulo(
+    draw,
+    texto,
+):
+    """
+    O modelo original usa um título grande em no máximo
+    duas linhas. Reduzimos a fonte até caber na mesma área.
+    """
+
+    for tamanho in range(
+        48,
+        31,
+        -2,
+    ):
+        fonte = _fonte(
+            tamanho,
+            bold=True,
+            condensed=True,
+        )
+
+        linhas = _quebrar_texto(
+            draw,
+            texto,
+            fonte,
+            largura_maxima=590,
+            max_linhas=2,
+        )
+
+        if len(linhas) <= 2:
+            altura = len(linhas) * (
+                tamanho + 7
+            )
+
+            if altura <= 112:
+                return (
+                    fonte,
+                    linhas,
+                    tamanho,
+                )
+
+    fonte = _fonte(
+        30,
+        bold=True,
+        condensed=True,
+    )
+
+    linhas = _quebrar_texto(
+        draw,
+        texto,
+        fonte,
+        largura_maxima=590,
+        max_linhas=2,
+    )
+
+    return (
+        fonte,
+        linhas,
+        30,
+    )
+
+
+# =========================================================
+# TEMPLATE ORIGINAL
+# =========================================================
+
+def _carregar_template():
+    if not TEMPLATE_PATH.exists():
+        raise RuntimeError(
+            "Template do Instagram não encontrado: "
+            f"{TEMPLATE_PATH}"
+        )
+
+    imagem = Image.open(
+        TEMPLATE_PATH
+    ).convert(
+        "RGB"
+    )
+
+    if imagem.size != (
+        LARGURA,
+        ALTURA,
+    ):
+        imagem = imagem.resize(
+            (
+                LARGURA,
+                ALTURA,
+            )
+        )
+
+    draw = ImageDraw.Draw(
+        imagem
+    )
+
+    # -----------------------------------------------------
+    # APAGA SOMENTE OS ELEMENTOS VARIÁVEIS DO POST ORIGINAL
+    # -----------------------------------------------------
+    #
+    # Todo o resto permanece PIXEL A PIXEL igual ao modelo:
+    # fundo, logo, molduras, circuitos, mascotes e rodapé.
+
+    # Título + benefícios.
+    draw.rectangle(
+        (
+            45,
+            335,
+            635,
+            650,
+        ),
+        fill=BRANCO,
+    )
+
+    # Selo de desconto original.
+    draw.rectangle(
+        (
+            292,
+            650,
+            525,
+            800,
+        ),
+        fill=BRANCO,
+    )
+
+    # Preços originais.
+    draw.rectangle(
+        (
+            245,
+            795,
+            570,
+            1000,
+        ),
+        fill=BRANCO,
+    )
+
+    # Limpa o interior do círculo do produto,
+    # preservando as bordas dourada/preta originais.
+    draw.ellipse(
+        (
+            706,
+            331,
+            1068,
+            724,
+        ),
+        fill=BRANCO,
+    )
+
+    return imagem
+
+
+# =========================================================
+# PRODUTO
+# =========================================================
 
 def _baixar_imagem_produto(
     url
@@ -253,338 +360,218 @@ def _baixar_imagem_produto(
     )
 
 
-def _desenhar_fundo():
-    imagem = Image.new(
-        "RGB",
-        (
-            LARGURA,
-            ALTURA,
-        ),
-        AZUL,
-    )
-
-    draw = ImageDraw.Draw(
-        imagem
-    )
-
-    # Circuitos decorativos
-    circuitos = [
-        (
-            (70, 255),
-            (160, 165),
-            (515, 165),
-            (660, 55),
-        ),
-        (
-            (170, 1350),
-            (170, 1110),
-            (245, 1030),
-        ),
-        (
-            (910, 1350),
-            (910, 1005),
-            (1020, 1005),
-        ),
-        (
-            (940, 0),
-            (940, 175),
-        ),
-    ]
-
-    for pontos in circuitos:
-        draw.line(
-            pontos,
-            fill=AZUL_CLARO,
-            width=4,
-        )
-
-        x, y = pontos[-1]
-
-        draw.ellipse(
-            (
-                x - 9,
-                y - 9,
-                x + 9,
-                y + 9,
-            ),
-            fill=AZUL_CLARO,
-        )
-
-    # Cabeçalho
-    draw.rounded_rectangle(
-        (
-            -55,
-            -40,
-            745,
-            225,
-        ),
-        radius=75,
-        fill=BRANCO,
-    )
-
-    draw.polygon(
-        [
-            (675, 0),
-            (755, 0),
-            (615, 225),
-            (535, 225),
-        ],
-        fill=VERDE,
-    )
-
-    # Faixa amarela
-    draw.rounded_rectangle(
-        (
-            -70,
-            250,
-            770,
-            325,
-        ),
-        radius=55,
-        fill=AMARELO,
-    )
-
-    # Card principal
-    draw.rounded_rectangle(
-        (
-            -45,
-            300,
-            850,
-            1085,
-        ),
-        radius=58,
-        fill=BRANCO,
-        outline=PRETO,
-        width=8,
-    )
-
-    # Rodapé
-    draw.polygon(
-        [
-            (255, 1140),
-            (LARGURA, 1140),
-            (LARGURA, ALTURA),
-            (155, ALTURA),
-        ],
-        fill=BRANCO,
-    )
-
-    draw.line(
-        (
-            165,
-            ALTURA,
-            310,
-            1140,
-        ),
-        fill=VERDE,
-        width=30,
-    )
-
-    return imagem
-
-
-def _colar_logo(
-    imagem
-):
-    if not LOGO_PATH.exists():
-        return
-
-    logo = Image.open(
-        LOGO_PATH
-    ).convert(
-        "RGBA"
-    )
-
-    logo.thumbnail(
-        (
-            560,
-            165,
-        )
-    )
-
-    imagem.paste(
-        logo,
-        (
-            35,
-            24,
-        ),
-        logo,
-    )
-
-
-def _colar_mascotes(
-    imagem
-):
-    if MASCOTE_FEMININA.exists():
-        feminina = Image.open(
-            MASCOTE_FEMININA
-        ).convert(
-            "RGBA"
-        )
-
-        feminina.thumbnail(
-            (
-                235,
-                305,
-            )
-        )
-
-        imagem.paste(
-            feminina,
-            (
-                10,
-                745,
-            ),
-            feminina,
-        )
-
-    if MASCOTE_MASCULINO.exists():
-        masculino = Image.open(
-            MASCOTE_MASCULINO
-        ).convert(
-            "RGBA"
-        )
-
-        masculino.thumbnail(
-            (
-                245,
-                300,
-            )
-        )
-
-        imagem.paste(
-            masculino,
-            (
-                555,
-                745,
-            ),
-            masculino,
-        )
-
-
 def _desenhar_produto(
     imagem,
     url_imagem,
 ):
-    draw = ImageDraw.Draw(
-        imagem
-    )
-
-    externo = (
-        655,
-        300,
-        1110,
-        765,
-    )
-
-    interno = (
-        682,
-        327,
-        1083,
-        738,
-    )
-
-    draw.ellipse(
-        externo,
-        fill=AMARELO,
-    )
-
-    draw.ellipse(
-        interno,
-        fill=BRANCO,
-        outline=PRETO,
-        width=7,
-    )
-
     produto = (
         _baixar_imagem_produto(
             url_imagem
         )
     )
 
+    # Mantém margens internas como no modelo original.
     produto = ImageOps.contain(
         produto,
         (
-            330,
-            330,
+            315,
+            315,
         ),
-    )
-
-    # Fundo branco para imagens com transparência irregular.
-    canvas = Image.new(
-        "RGBA",
-        produto.size,
-        (
-            255,
-            255,
-            255,
-            0,
-        ),
-    )
-
-    canvas.alpha_composite(
-        produto
     )
 
     x = (
-        882
-        - canvas.width // 2
+        887
+        - produto.width // 2
     )
 
     y = (
-        530
-        - canvas.height // 2
+        528
+        - produto.height // 2
     )
 
     imagem.paste(
-        canvas,
+        produto,
         (
             x,
             y,
         ),
-        canvas,
+        produto,
     )
 
 
-def _desenhar_selo_desconto(
+# =========================================================
+# SELO
+# =========================================================
+
+def _pontos_selo(
+    cx,
+    cy,
+    raio_externo,
+    raio_interno,
+    pontas=18,
+):
+    import math
+
+    pontos = []
+
+    for indice in range(
+        pontas * 2
+    ):
+        angulo = (
+            -math.pi / 2
+            + indice
+            * math.pi
+            / pontas
+        )
+
+        raio = (
+            raio_externo
+            if indice % 2 == 0
+            else raio_interno
+        )
+
+        pontos.append(
+            (
+                cx
+                + math.cos(
+                    angulo
+                )
+                * raio,
+
+                cy
+                + math.sin(
+                    angulo
+                )
+                * raio,
+            )
+        )
+
+    return pontos
+
+
+def _desenhar_selo(
     draw,
-    desconto
+    desconto,
 ):
     if desconto <= 0:
         return
 
-    draw.ellipse(
-        (
-            320,
-            690,
-            505,
-            870,
-        ),
-        fill=VERDE_CLARO,
-        outline=VERDE,
-        width=5,
+    cx = 405
+    cy = 720
+
+    pontos = _pontos_selo(
+        cx,
+        cy,
+        79,
+        70,
+    )
+
+    draw.polygon(
+        pontos,
+        fill="#B7F078",
+        outline="#70C82E",
+    )
+
+    # Pequenos traços ao redor, como no modelo.
+    for inicio, fim in [
+        ((405, 625), (405, 642)),
+        ((355, 635), (365, 650)),
+        ((455, 635), (445, 650)),
+        ((320, 678), (338, 683)),
+        ((490, 678), (472, 683)),
+        ((318, 746), (337, 742)),
+        ((492, 746), (473, 742)),
+        ((350, 795), (360, 779)),
+        ((460, 795), (450, 779)),
+    ]:
+        draw.line(
+            (
+                inicio,
+                fim,
+            ),
+            fill="#70C82E",
+            width=3,
+        )
+
+    texto = (
+        f"{desconto:.0f}% OFF"
     )
 
     draw.text(
         (
-            412,
-            780,
+            cx,
+            cy,
         ),
-        f"{desconto:.0f}% OFF",
+        texto,
         anchor="mm",
         font=_fonte(
-            34,
+            24,
             bold=True,
+            condensed=True,
         ),
         fill=BRANCO,
+        stroke_width=1,
+        stroke_fill="#70C82E",
     )
 
 
-def _desenhar_bullets(
-    draw,
+# =========================================================
+# ARTE
+# =========================================================
+
+def gerar_arte_produto(
     produto,
-    inicio_y,
+    destino,
+    posicao,
 ):
+    imagem = (
+        _carregar_template()
+    )
+
+    draw = ImageDraw.Draw(
+        imagem
+    )
+
+    # -----------------------------------------------------
+    # TÍTULO — MESMA ÁREA DO MODELO
+    # -----------------------------------------------------
+
+    fonte_titulo, linhas, tamanho = (
+        _reduzir_titulo(
+            draw,
+            produto.get(
+                "nome"
+            ),
+        )
+    )
+
+    y = 345
+
+    for linha in linhas:
+        draw.text(
+            (
+                52,
+                y,
+            ),
+            linha,
+            font=fonte_titulo,
+            fill=AZUL_TEXTO,
+            stroke_width=1,
+            stroke_fill=AZUL_TEXTO,
+        )
+
+        y += (
+            tamanho
+            + 10
+        )
+
+    # -----------------------------------------------------
+    # 3 LINHAS — MESMA POSIÇÃO DO MODELO
+    # -----------------------------------------------------
+    #
+    # Não inventamos benefícios técnicos. Mantemos o mesmo
+    # visual usando dados reais que o PromoConn já possui.
+
     categoria = (
         produto.get(
             "categoria"
@@ -598,159 +585,92 @@ def _desenhar_bullets(
         )
     )
 
-    bullets = [
-        "Selecionada entre as melhores do dia",
-        f"Categoria: {categoria}",
-    ]
+    linha_1 = "Uma das melhores promoções do dia"
+    linha_2 = f"Categoria: {categoria}"
 
     if ranking is not None:
-        bullets.append(
+        linha_3 = (
             f"Ranking Mercado Livre: #{ranking}"
         )
-
     else:
-        bullets.append(
-            "Link disponível no grupo"
+        linha_3 = (
+            "Confira a oferta no nosso grupo"
         )
 
-    fonte_texto = _fonte(
-        28,
+    bullets = [
+        linha_1,
+        linha_2,
+        linha_3,
+    ]
+
+    fonte_bullet = _fonte(
+        27,
         bold=False,
+        condensed=True,
     )
 
     fonte_check = _fonte(
-        32,
+        31,
         bold=True,
     )
 
-    y = inicio_y
+    bullet_y = 500
 
     for texto in bullets:
         draw.text(
             (
-                56,
-                y,
+                51,
+                bullet_y,
             ),
             "✓",
             font=fonte_check,
-            fill="#08B828",
+            fill="#00B915",
         )
 
-        linhas = _quebrar_texto(
-            draw,
-            texto,
-            fonte_texto,
-            515,
-            max_linhas=2,
-        )
+        # Mantém cada linha em UMA linha sempre que possível.
+        tamanho_bullet = 27
+        fonte_atual = fonte_bullet
 
-        texto_y = y
-
-        for linha in linhas:
-            draw.text(
+        while tamanho_bullet > 20:
+            bbox = draw.textbbox(
                 (
-                    93,
-                    texto_y,
+                    0,
+                    0,
                 ),
-                linha.title(),
-                font=fonte_texto,
-                fill=AZUL,
+                texto,
+                font=fonte_atual,
             )
 
-            texto_y += 35
+            if (
+                bbox[2]
+                - bbox[0]
+                <= 520
+            ):
+                break
 
-        y = max(
-            y + 52,
-            texto_y + 8,
-        )
+            tamanho_bullet -= 1
 
+            fonte_atual = _fonte(
+                tamanho_bullet,
+                bold=False,
+                condensed=True,
+            )
 
-def gerar_arte_produto(
-    produto,
-    destino,
-    posicao,
-):
-    imagem = (
-        _desenhar_fundo()
-    )
-
-    _colar_logo(
-        imagem
-    )
-
-    _colar_mascotes(
-        imagem
-    )
-
-    draw = ImageDraw.Draw(
-        imagem
-    )
-
-    # TOP #
-    draw.rounded_rectangle(
-        (
-            55,
-            323,
-            180,
-            368,
-        ),
-        radius=22,
-        fill=AZUL_CLARO,
-    )
-
-    draw.text(
-        (
-            117,
-            345,
-        ),
-        f"TOP {posicao}",
-        anchor="mm",
-        font=_fonte(
-            24,
-            bold=True,
-        ),
-        fill=BRANCO,
-    )
-
-    # Título
-    fonte_titulo = _fonte(
-        47,
-        bold=True,
-    )
-
-    linhas = _quebrar_texto(
-        draw,
-        produto.get(
-            "nome"
-        ),
-        fonte_titulo,
-        575,
-        max_linhas=3,
-    )
-
-    y = 388
-
-    for linha in linhas:
         draw.text(
             (
-                53,
-                y,
+                88,
+                bullet_y + 2,
             ),
-            linha,
-            font=fonte_titulo,
-            fill=AZUL,
+            texto,
+            font=fonte_atual,
+            fill=AZUL_TEXTO,
         )
 
-        y += 58
+        bullet_y += 52
 
-    _desenhar_bullets(
-        draw,
-        produto,
-        max(
-            550,
-            y + 24,
-        ),
-    )
+    # -----------------------------------------------------
+    # PRODUTO — DENTRO DO MESMO CÍRCULO DO MODELO
+    # -----------------------------------------------------
 
     _desenhar_produto(
         imagem,
@@ -758,6 +678,10 @@ def gerar_arte_produto(
             "imagem"
         ],
     )
+
+    # -----------------------------------------------------
+    # DESCONTO
+    # -----------------------------------------------------
 
     desconto = float(
         produto.get(
@@ -767,10 +691,14 @@ def gerar_arte_produto(
         or 0
     )
 
-    _desenhar_selo_desconto(
+    _desenhar_selo(
         draw,
         desconto,
     )
+
+    # -----------------------------------------------------
+    # PREÇOS — MESMA HIERARQUIA / POSIÇÃO DO MODELO
+    # -----------------------------------------------------
 
     preco = float(
         produto[
@@ -790,32 +718,44 @@ def gerar_arte_produto(
             preco_original
         ) > preco
     ):
-        texto_antigo = (
-            "DE "
-            + _moeda(
-                preco_original
-            )
+        draw.text(
+            (
+                262,
+                805,
+            ),
+            "DE",
+            font=_fonte(
+                27,
+                bold=True,
+                condensed=True,
+            ),
+            fill=AZUL_PRECO,
+        )
+
+        texto_antigo = _moeda(
+            preco_original
         )
 
         fonte_antigo = _fonte(
-            31,
+            39,
             bold=True,
+            condensed=True,
         )
 
         draw.text(
             (
-                260,
-                885,
+                262,
+                838,
             ),
             texto_antigo,
             font=fonte_antigo,
-            fill=AZUL_CLARO,
+            fill=AZUL_PRECO,
         )
 
         bbox = draw.textbbox(
             (
-                260,
-                885,
+                262,
+                838,
             ),
             texto_antigo,
             font=fonte_antigo,
@@ -828,96 +768,76 @@ def gerar_arte_produto(
 
         draw.line(
             (
-                bbox[0],
+                bbox[0] - 3,
                 meio,
-                bbox[2],
+                bbox[2] + 3,
                 meio,
             ),
-            fill=AZUL_CLARO,
+            fill=AZUL_PRECO,
             width=4,
         )
 
     draw.text(
         (
-            268,
-            936,
+            474,
+            850,
         ),
         "POR",
         font=_fonte(
-            31,
+            34,
             bold=True,
+            condensed=True,
         ),
-        fill="#F5A900",
+        fill=AMARELO,
     )
+
+    # Preço atual com ajuste automático para não invadir o mascote.
+    texto_preco = _moeda(
+        preco
+    )
+
+    tamanho_preco = 58
+
+    while tamanho_preco >= 42:
+        fonte_preco = _fonte(
+            tamanho_preco,
+            bold=True,
+            condensed=True,
+        )
+
+        bbox = draw.textbbox(
+            (
+                0,
+                0,
+            ),
+            texto_preco,
+            font=fonte_preco,
+        )
+
+        if (
+            bbox[2]
+            - bbox[0]
+            <= 295
+        ):
+            break
+
+        tamanho_preco -= 2
 
     draw.text(
         (
-            268,
-            978,
+            304,
+            908,
         ),
-        _moeda(
-            preco
-        ),
-        font=_fonte(
-            64,
-            bold=True,
-        ),
-        fill="#F5A900",
+        texto_preco,
+        font=fonte_preco,
+        fill=AMARELO,
+        stroke_width=1,
+        stroke_fill=AMARELO,
     )
 
-    # Rodapé
-    draw.text(
-        (
-            665,
-            1195,
-        ),
-        "ENTRE NO GRUPO E RECEBA AS",
-        anchor="mm",
-        font=_fonte(
-            31,
-            bold=True,
-        ),
-        fill=AZUL,
-    )
-
-    draw.text(
-        (
-            665,
-            1240,
-        ),
-        "MELHORES PROMOÇÕES!",
-        anchor="mm",
-        font=_fonte(
-            35,
-            bold=True,
-        ),
-        fill=AZUL,
-    )
-
-    draw.rounded_rectangle(
-        (
-            550,
-            1283,
-            860,
-            1336,
-        ),
-        radius=28,
-        fill=VERDE,
-    )
-
-    draw.text(
-        (
-            705,
-            1309,
-        ),
-        "LINK NA BIO",
-        anchor="mm",
-        font=_fonte(
-            30,
-            bold=True,
-        ),
-        fill=BRANCO,
-    )
+    # -----------------------------------------------------
+    # SALVA
+    # -----------------------------------------------------
 
     destino = Path(
         destino
@@ -931,11 +851,43 @@ def gerar_arte_produto(
     imagem.save(
         destino,
         "JPEG",
-        quality=94,
+        quality=95,
         optimize=True,
     )
 
     return destino
+
+
+# =========================================================
+# LOTE
+# =========================================================
+
+def _normalizar_nome_arquivo(
+    texto
+):
+    texto = str(
+        texto
+        or "produto"
+    )
+
+    texto = re.sub(
+        r"[^a-zA-Z0-9_-]+",
+        "_",
+        texto,
+    )
+
+    texto = re.sub(
+        r"_+",
+        "_",
+        texto,
+    )
+
+    return (
+        texto.strip(
+            "_"
+        )[:60]
+        or "produto"
+    )
 
 
 def gerar_artes_top(
@@ -945,8 +897,10 @@ def gerar_artes_top(
         FUSO_BRASIL
     )
 
-    chave_data = agora.strftime(
-        "%Y-%m-%d"
+    chave_data = (
+        agora.strftime(
+            "%Y-%m-%d"
+        )
     )
 
     pasta = (
@@ -959,8 +913,6 @@ def gerar_artes_top(
         exist_ok=True,
     )
 
-    # Remove apenas as artes do mesmo dia para não deixar
-    # arquivos antigos quando o Top 5 mudar.
     for antigo in pasta.glob(
         "*.jpg"
     ):
