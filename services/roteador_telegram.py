@@ -9,6 +9,28 @@ from database.canais_telegram import (
 CATEGORIA_GERAL = "Geral"
 
 
+# =========================================================
+# CATEGORIAS OFICIAIS DO PROMOCONN
+# =========================================================
+
+CATEGORIAS_PROMOCONN = {
+    "celulares": "Celulares",
+    "games": "Games",
+    "tecnologia": "Tecnologia",
+    "informatica": "Tecnologia",
+    "casa": "Casa",
+    "esportes": "Esportes",
+    "moda feminina": "Moda Feminina",
+    "moda masculina": "Moda Masculina",
+    "beleza": "Beleza e Cuidados",
+    "beleza e cuidados": "Beleza e Cuidados",
+}
+
+
+# =========================================================
+# NORMALIZAÇÃO
+# =========================================================
+
 def normalizar(texto):
     if not texto:
         return ""
@@ -43,24 +65,89 @@ def normalizar(texto):
     return texto.strip()
 
 
+# =========================================================
+# DESCOBRE CATEGORIA
+# =========================================================
+
 def descobrir_categoria_destino(
     produto
 ):
-    nome = normalizar(
-        produto.get("nome")
+    # =====================================================
+    # 1. PRIORIZA A CATEGORIA JÁ SALVA
+    # =====================================================
+
+    categoria_original = normalizar(
+        produto.get(
+            "categoria"
+        )
     )
 
-    categoria = normalizar(
-        produto.get("categoria")
+    if (
+        categoria_original
+        in CATEGORIAS_PROMOCONN
+    ):
+        return CATEGORIAS_PROMOCONN[
+            categoria_original
+        ]
+
+    # =====================================================
+    # 2. FALLBACK PELO NOME
+    # =====================================================
+
+    nome = normalizar(
+        produto.get(
+            "nome"
+        )
     )
 
     texto = (
-        f"{categoria} {nome}"
+        f"{categoria_original} {nome}"
     )
 
-    # =========================================
+    # =====================================================
+    # BELEZA E CUIDADOS
+    # =====================================================
+
+    termos_beleza = (
+        "beleza",
+        "cosmetico",
+        "cosmeticos",
+        "maquiagem",
+        "batom",
+        "rimel",
+        "mascara de cilios",
+        "base facial",
+        "corretivo",
+        "perfume",
+        "perfumaria",
+        "shampoo",
+        "condicionador",
+        "hidratante",
+        "skincare",
+        "skin care",
+        "protetor solar",
+        "creme facial",
+        "creme corporal",
+        "serum",
+        "serum facial",
+        "barbeador",
+        "barba",
+        "kit barba",
+        "depilador",
+        "secador de cabelo",
+        "chapinha",
+        "prancha de cabelo",
+    )
+
+    if any(
+        termo in texto
+        for termo in termos_beleza
+    ):
+        return "Beleza e Cuidados"
+
+    # =====================================================
     # MODA FEMININA
-    # =========================================
+    # =====================================================
 
     termos_femininos = (
         "feminino",
@@ -79,9 +166,9 @@ def descobrir_categoria_destino(
     ):
         return "Moda Feminina"
 
-    # =========================================
+    # =====================================================
     # MODA MASCULINA
-    # =========================================
+    # =====================================================
 
     termos_masculinos = (
         "masculino",
@@ -98,9 +185,9 @@ def descobrir_categoria_destino(
     ):
         return "Moda Masculina"
 
-    # =========================================
+    # =====================================================
     # ESPORTES
-    # =========================================
+    # =====================================================
 
     termos_esportes = (
         "esporte",
@@ -120,9 +207,9 @@ def descobrir_categoria_destino(
     ):
         return "Esportes"
 
-    # =========================================
+    # =====================================================
     # GAMES
-    # =========================================
+    # =====================================================
 
     termos_games = (
         "games",
@@ -141,9 +228,9 @@ def descobrir_categoria_destino(
     ):
         return "Games"
 
-    # =========================================
+    # =====================================================
     # CELULARES
-    # =========================================
+    # =====================================================
 
     termos_celulares = (
         "celular",
@@ -161,11 +248,12 @@ def descobrir_categoria_destino(
     ):
         return "Celulares"
 
-    # =========================================
-    # INFORMÁTICA
-    # =========================================
+    # =====================================================
+    # TECNOLOGIA
+    # =====================================================
 
-    termos_informatica = (
+    termos_tecnologia = (
+        "tecnologia",
         "informatica",
         "notebook",
         "computador",
@@ -180,13 +268,13 @@ def descobrir_categoria_destino(
 
     if any(
         termo in texto
-        for termo in termos_informatica
+        for termo in termos_tecnologia
     ):
-        return "Informática"
+        return "Tecnologia"
 
-    # =========================================
+    # =====================================================
     # CASA
-    # =========================================
+    # =====================================================
 
     termos_casa = (
         "casa",
@@ -204,8 +292,16 @@ def descobrir_categoria_destino(
     ):
         return "Casa"
 
+    # =====================================================
+    # SEM CATEGORIA ESPECÍFICA
+    # =====================================================
+
     return CATEGORIA_GERAL
 
+
+# =========================================================
+# BUSCA DESTINO
+# =========================================================
 
 def buscar_destino_produto(
     produto
@@ -216,14 +312,46 @@ def buscar_destino_produto(
         )
     )
 
-    canal = buscar_canal_por_categoria(
+    print(
+        "📌 Roteamento Telegram:"
+    )
+
+    print(
+        "   Categoria salva:",
+        produto.get(
+            "categoria"
+        )
+    )
+
+    print(
+        "   Categoria destino:",
         categoria_destino
     )
 
+    canal = (
+        buscar_canal_por_categoria(
+            categoria_destino
+        )
+    )
+
     if canal:
+        print(
+            "   ✅ Canal encontrado:",
+            canal.get(
+                "nome"
+            )
+        )
+
         return canal
 
-    # fallback para grupo geral
+    print(
+        "   ⚠️ Canal específico não encontrado."
+    )
+
+    print(
+        "   ↪ Usando grupo Geral."
+    )
+
     return buscar_canal_por_categoria(
         CATEGORIA_GERAL
     )
