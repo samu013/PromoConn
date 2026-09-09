@@ -1169,3 +1169,115 @@ def gerar_arte(
     )
 
     return caminho_saida
+
+# ============================================================
+# ARTES DO TOP 5 DO DIA
+# ============================================================
+
+def gerar_artes_top(produtos):
+    """
+    Gera automaticamente as artes dos produtos selecionados
+    para o Instagram.
+
+    Recebe uma lista de dicionários de produtos.
+
+    Exemplo:
+
+    [
+        {
+            "ml_id": "123",
+            "titulo": "Produto X",
+            "categoria": "Games",
+            "ranking": 1,
+            "preco_antigo": "699,00",
+            "preco_atual": "469,00",
+            "desconto": 33,
+            "imagem": "/caminho/foto.png"
+        }
+    ]
+
+    Retorna uma lista com os caminhos das artes geradas.
+    """
+
+    if not produtos:
+        print(
+            "⚠️ Nenhum produto recebido "
+            "para geração das artes."
+        )
+
+        return []
+
+    PASTA_SAIDA.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    artes = []
+
+    print(
+        "\n"
+        + "=" * 60
+    )
+    print(
+        "📸 GERANDO ARTES DO INSTAGRAM"
+    )
+    print(
+        "=" * 60
+    )
+
+    for posicao, produto in enumerate(
+        produtos[:5],
+        start=1,
+    ):
+        try:
+            # Garante ranking mesmo que o seletor
+            # não tenha enviado esse campo.
+            if not produto.get("ranking"):
+                produto["ranking"] = posicao
+
+            caminho = gerar_arte(
+                produto
+            )
+
+            artes.append(
+                caminho
+            )
+
+            print(
+                f"✅ Arte {posicao}/5 criada: "
+                f"{caminho}"
+            )
+
+        except Exception as erro:
+            print(
+                f"❌ Erro ao gerar arte "
+                f"{posicao}/5: {erro}"
+            )
+
+    print(
+        f"📸 Total de artes geradas: "
+        f"{len(artes)}"
+    )
+
+    return artes
+
+
+def listar_artes_do_dia():
+    """
+    Lista as artes PNG geradas no dia.
+
+    Como o Render pode reiniciar o serviço e o diretório
+    pode ser limpo, esta função serve principalmente para
+    uso local e visualização durante o processo.
+    """
+
+    if not PASTA_SAIDA.exists():
+        return []
+
+    arquivos = sorted(
+        PASTA_SAIDA.glob("*.png"),
+        key=lambda arquivo: arquivo.stat().st_mtime,
+        reverse=True,
+    )
+
+    return arquivos
