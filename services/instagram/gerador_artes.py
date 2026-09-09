@@ -1,493 +1,1171 @@
-import io
-import math
-import re
-from datetime import datetime
 from pathlib import Path
-from zoneinfo import ZoneInfo
-
-import requests
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 
-FUSO_BRASIL = ZoneInfo("America/Sao_Paulo")
+# ============================================================
+# CONFIGURAÇÕES
+# ============================================================
 
 LARGURA = 1080
 ALTURA = 1350
 
-AZUL = "#071B55"
-AZUL_CLARO = "#168FD2"
-VERDE = "#75C82D"
-VERDE_CLARO = "#9BE95C"
-AMARELO = "#FFB400"
+BASE_DIR = Path(__file__).resolve().parents[2]
+
+PASTA_IMAGENS = BASE_DIR / "static" / "img"
+PASTA_INSTAGRAM = PASTA_IMAGENS / "instagram"
+
+LOGO_PATH = PASTA_INSTAGRAM / "logo.png"
+ROBO_FEMININO_PATH = PASTA_INSTAGRAM / "robo_feminino.png"
+ROBO_MASCULINO_PATH = PASTA_INSTAGRAM / "robo_masculino.png"
+
+PASTA_SAIDA = PASTA_INSTAGRAM / "geradas"
+
+
+# ============================================================
+# CORES
+# ============================================================
+
+AZUL_ESCURO = "#07163F"
+AZUL = "#168FD0"
+AZUL_CLARO = "#20A4E5"
+
 BRANCO = "#FFFFFF"
+VERDE = "#69C92A"
+VERDE_ESCURO = "#49A91E"
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-STATIC_ROOT = PROJECT_ROOT / "static"
-TEMPLATE_PATH = STATIC_ROOT / "img" / "instagram" / "modelo_base_limpo.png"
-GERADAS_ROOT = STATIC_ROOT / "instagram" / "geradas"
+AMARELO = "#FFBF22"
+AMARELO_ESCURO = "#E9A900"
+
+CINZA = "#6B7280"
+PRETO = "#101828"
+
+VERMELHO = "#D92D20"
 
 
-# =========================================================
+# ============================================================
 # FONTES
-# =========================================================
+# ============================================================
 
-def _fonte(tamanho, bold=False, condensed=False):
-    candidatos = []
+FONT_DIR = Path("C:/Windows/Fonts")
 
-    if condensed and bold:
-        candidatos += [
-            "/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf",
-            "/usr/share/fonts/truetype/liberation2/LiberationSansNarrow-Bold.ttf",
-            "C:/Windows/Fonts/arialbd.ttf",
-        ]
-
-    elif bold:
-        candidatos += [
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf",
-            "C:/Windows/Fonts/arialbd.ttf",
-        ]
-
-    else:
-        candidatos += [
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-            "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
-            "C:/Windows/Fonts/arial.ttf",
-        ]
-
-    for caminho in candidatos:
-        if Path(caminho).exists():
-            return ImageFont.truetype(caminho, tamanho)
-
-    return ImageFont.load_default()
+FONT_BOLD = FONT_DIR / "arialbd.ttf"
+FONT_REGULAR = FONT_DIR / "arial.ttf"
+FONT_BLACK = FONT_DIR / "arialbd.ttf"
 
 
-# =========================================================
-# UTILITÁRIOS
-# =========================================================
+def fonte(tamanho, negrito=True):
+    """
+    Carrega uma fonte do Windows.
+    """
 
-def _moeda(valor):
-    valor = float(valor)
+    caminho = FONT_BOLD if negrito else FONT_REGULAR
 
-    texto = (
-        f"{valor:,.2f}"
-        .replace(",", "X")
-        .replace(".", ",")
-        .replace("X", ".")
+    try:
+        return ImageFont.truetype(
+            str(caminho),
+            tamanho,
+        )
+
+    except Exception:
+        return ImageFont.load_default()
+
+
+# ============================================================
+# FUNÇÕES AUXILIARES
+# ============================================================
+
+def texto_tamanho(draw, texto, font):
+    """
+    Retorna largura e altura aproximadas do texto.
+    """
+
+    caixa = draw.textbbox(
+        (0, 0),
+        texto,
+        font=font,
     )
 
-    return f"R${texto}"
+    return (
+        caixa[2] - caixa[0],
+        caixa[3] - caixa[1],
+    )
 
 
-def _largura_texto(draw, texto, fonte):
-    bbox = draw.textbbox((0, 0), texto, font=fonte)
-    return bbox[2] - bbox[0]
+def quebrar_texto(
+    draw,
+    texto,
+    font,
+    largura_maxima,
+):
+    """
+    Quebra o título em linhas sem ultrapassar
+    a largura disponível.
+    """
 
+    palavras = texto.split()
 
-def _quebrar_texto(draw, texto, fonte, largura_maxima, max_linhas=3):
-    palavras = str(texto or "").upper().split()
     linhas = []
-    atual = ""
+    linha_atual = ""
 
     for palavra in palavras:
-        teste = f"{atual} {palavra}".strip()
 
-        if _largura_texto(draw, teste, fonte) <= largura_maxima:
-            atual = teste
-            continue
+        tentativa = (
+            palavra
+            if not linha_atual
+            else f"{linha_atual} {palavra}"
+        )
 
-        if atual:
-            linhas.append(atual)
-
-        atual = palavra
-
-        if len(linhas) >= max_linhas - 1:
-            break
-
-    if atual and len(linhas) < max_linhas:
-        linhas.append(atual)
-
-    return linhas[:max_linhas]
-
-
-def _titulo_ajustado(draw, titulo):
-    """
-    Título limitado à área original do modelo.
-    Nunca deixa texto escapar para dentro do círculo.
-    """
-    for tamanho in range(46, 27, -2):
-        fonte = _fonte(tamanho, bold=True, condensed=True)
-        linhas = _quebrar_texto(
+        largura, _ = texto_tamanho(
             draw,
-            titulo,
-            fonte,
-            largura_maxima=570,
-            max_linhas=3,
+            tentativa,
+            font,
+        )
+
+        if largura <= largura_maxima:
+            linha_atual = tentativa
+
+        else:
+            if linha_atual:
+                linhas.append(linha_atual)
+
+            linha_atual = palavra
+
+    if linha_atual:
+        linhas.append(linha_atual)
+
+    return linhas
+
+
+def desenhar_texto_centralizado(
+    draw,
+    texto,
+    y,
+    font,
+    cor,
+):
+    """
+    Desenha um texto centralizado horizontalmente.
+    """
+
+    largura, altura = texto_tamanho(
+        draw,
+        texto,
+        font,
+    )
+
+    x = (LARGURA - largura) // 2
+
+    draw.text(
+        (x, y),
+        texto,
+        font=font,
+        fill=cor,
+    )
+
+    return altura
+
+
+def carregar_imagem(caminho):
+    """
+    Carrega uma imagem se ela existir.
+    """
+
+    if not caminho:
+        return None
+
+    caminho = Path(caminho)
+
+    if not caminho.exists():
+        return None
+
+    try:
+        return Image.open(caminho).convert("RGBA")
+
+    except Exception:
+        return None
+
+
+# ============================================================
+# FOTO DO PRODUTO
+# ============================================================
+
+def preparar_foto_produto(
+    caminho,
+    tamanho=430,
+):
+    """
+    Coloca o produto dentro de uma área quadrada
+    sem distorcer a imagem.
+
+    O produto nunca ultrapassa a área.
+    """
+
+    imagem = carregar_imagem(caminho)
+
+    if imagem is None:
+        return None
+
+    imagem.thumbnail(
+        (
+            tamanho - 60,
+            tamanho - 60,
+        ),
+        Image.Resampling.LANCZOS,
+    )
+
+    fundo = Image.new(
+        "RGBA",
+        (
+            tamanho,
+            tamanho,
+        ),
+        BRANCO,
+    )
+
+    x = (
+        tamanho - imagem.width
+    ) // 2
+
+    y = (
+        tamanho - imagem.height
+    ) // 2
+
+    fundo.alpha_composite(
+        imagem,
+        (
+            x,
+            y,
+        ),
+    )
+
+    return fundo
+
+
+def criar_area_produto(
+    imagem_produto,
+    tamanho=470,
+):
+    """
+    Cria o círculo onde ficará o produto.
+
+    Importante:
+    o fundo é criado do zero.
+    Nenhuma imagem de modelo é utilizada.
+    """
+
+    area = Image.new(
+        "RGBA",
+        (
+            tamanho,
+            tamanho,
+        ),
+        (
+            0,
+            0,
+            0,
+            0,
+        ),
+    )
+
+    draw = ImageDraw.Draw(area)
+
+    centro = tamanho // 2
+
+    # Círculo externo
+    draw.ellipse(
+        (
+            0,
+            0,
+            tamanho - 1,
+            tamanho - 1,
+        ),
+        fill=AMARELO,
+        outline=BRANCO,
+        width=8,
+    )
+
+    # Círculo interno
+    margem = 18
+
+    draw.ellipse(
+        (
+            margem,
+            margem,
+            tamanho - margem,
+            tamanho - margem,
+        ),
+        fill=BRANCO,
+        outline=AZUL_ESCURO,
+        width=7,
+    )
+
+    if imagem_produto is not None:
+
+        produto = preparar_foto_produto(
+            imagem_produto,
+            tamanho=tamanho - 55,
+        )
+
+        if produto:
+
+            # Máscara circular interna
+            mascara = Image.new(
+                "L",
+                produto.size,
+                0,
+            )
+
+            mascara_draw = ImageDraw.Draw(
+                mascara
+            )
+
+            mascara_draw.ellipse(
+                (
+                    0,
+                    0,
+                    produto.width,
+                    produto.height,
+                ),
+                fill=255,
+            )
+
+            produto_circular = Image.new(
+                "RGBA",
+                produto.size,
+                (
+                    255,
+                    255,
+                    255,
+                    0,
+                ),
+            )
+
+            produto_circular.paste(
+                produto,
+                (
+                    0,
+                    0,
+                ),
+                mascara,
+            )
+
+            x = (
+                tamanho
+                - produto.width
+            ) // 2
+
+            y = (
+                tamanho
+                - produto.height
+            ) // 2
+
+            area.alpha_composite(
+                produto_circular,
+                (
+                    x,
+                    y,
+                ),
+            )
+
+    return area
+
+
+# ============================================================
+# TÍTULO
+# ============================================================
+
+def desenhar_titulo(
+    imagem,
+    draw,
+    titulo,
+):
+    """
+    Desenha o título com tamanho automático.
+
+    Evita que títulos grandes saiam da área.
+    """
+
+    largura_maxima = 540
+
+    tamanho = 72
+
+    while tamanho >= 42:
+
+        font = fonte(
+            tamanho,
+            True,
+        )
+
+        linhas = quebrar_texto(
+            draw,
+            titulo.upper(),
+            font,
+            largura_maxima,
         )
 
         if len(linhas) <= 3:
-            altura = len(linhas) * (tamanho + 8)
-            if altura <= 145:
-                return fonte, linhas, tamanho
-
-    fonte = _fonte(28, bold=True, condensed=True)
-    return fonte, _quebrar_texto(draw, titulo, fonte, 570, 3), 28
-
-
-def _baixar_imagem(url):
-    resposta = requests.get(
-        url,
-        timeout=25,
-        headers={"User-Agent": "Mozilla/5.0"},
-    )
-    resposta.raise_for_status()
-
-    return Image.open(io.BytesIO(resposta.content)).convert("RGBA")
-
-
-# =========================================================
-# PRODUTO COM RECORTE NO CÍRCULO
-# =========================================================
-
-def _colar_produto_no_circulo(imagem, url):
-    produto = _baixar_imagem(url)
-
-    # Mantém produto sempre menor que a área útil do círculo.
-    produto = ImageOps.contain(produto, (300, 300))
-
-    # Canvas transparente exatamente no tamanho da área interna.
-    area_w = 350
-    area_h = 350
-    area = Image.new("RGBA", (area_w, area_h), (255, 255, 255, 0))
-
-    px = (area_w - produto.width) // 2
-    py = (area_h - produto.height) // 2
-    area.alpha_composite(produto, (px, py))
-
-    # Máscara circular/oval para impedir QUALQUER pixel de escapar.
-    mask = Image.new("L", (area_w, area_h), 0)
-    md = ImageDraw.Draw(mask)
-    md.ellipse((0, 0, area_w - 1, area_h - 1), fill=255)
-
-    # Fundo branco dentro da área mascarada.
-    fundo = Image.new("RGBA", (area_w, area_h), (255, 255, 255, 255))
-    fundo.alpha_composite(area)
-
-    # Posição central dentro do aro do template.
-    destino_x = 712
-    destino_y = 350
-
-    imagem.paste(
-        fundo,
-        (destino_x, destino_y),
-        mask,
-    )
-
-
-# =========================================================
-# SELO DE DESCONTO
-# =========================================================
-
-def _selo_pontos(cx, cy, re, ri, pontas=18):
-    pontos = []
-
-    for i in range(pontas * 2):
-        ang = -math.pi / 2 + i * math.pi / pontas
-        r = re if i % 2 == 0 else ri
-        pontos.append((cx + math.cos(ang) * r, cy + math.sin(ang) * r))
-
-    return pontos
-
-
-def _desenhar_selo(draw, desconto):
-    if desconto <= 0:
-        return
-
-    # Abaixo dos benefícios, sem encostar no texto.
-    cx = 405
-    cy = 725
-
-    draw.polygon(
-        _selo_pontos(cx, cy, 72, 62),
-        fill="#B8EF79",
-        outline="#70C82D",
-    )
-
-    draw.text(
-        (cx, cy),
-        f"{desconto:.0f}% OFF",
-        anchor="mm",
-        font=_fonte(24, bold=True, condensed=True),
-        fill=BRANCO,
-        stroke_width=1,
-        stroke_fill="#70C82D",
-    )
-
-
-# =========================================================
-# PREÇOS
-# =========================================================
-
-def _fonte_que_cabe(draw, texto, tamanho_inicial, tamanho_minimo, largura):
-    for tamanho in range(tamanho_inicial, tamanho_minimo - 1, -2):
-        fonte = _fonte(tamanho, bold=True, condensed=True)
-        if _largura_texto(draw, texto, fonte) <= largura:
-            return fonte
-
-    return _fonte(tamanho_minimo, bold=True, condensed=True)
-
-
-def _desenhar_precos(draw, produto):
-    preco = float(produto["preco"])
-    anterior = produto.get("preco_original")
-
-    # Bloco totalmente separado em três níveis:
-    # DE / preço antigo
-    # POR
-    # preço atual
-    if anterior is not None and float(anterior) > preco:
-        texto_antigo = _moeda(anterior)
-
-        draw.text(
-            (260, 805),
-            "DE",
-            font=_fonte(25, bold=True, condensed=True),
-            fill=AZUL_CLARO,
-        )
-
-        fonte_antigo = _fonte_que_cabe(
-            draw,
-            texto_antigo,
-            tamanho_inicial=37,
-            tamanho_minimo=27,
-            largura=250,
-        )
-
-        draw.text(
-            (260, 838),
-            texto_antigo,
-            font=fonte_antigo,
-            fill=AZUL_CLARO,
-        )
-
-        bbox = draw.textbbox(
-            (260, 838),
-            texto_antigo,
-            font=fonte_antigo,
-        )
-
-        y_risco = (bbox[1] + bbox[3]) // 2
-
-        draw.line(
-            (bbox[0] - 2, y_risco, bbox[2] + 2, y_risco),
-            fill=AZUL_CLARO,
-            width=4,
-        )
-
-    draw.text(
-        (475, 855),
-        "POR",
-        font=_fonte(29, bold=True, condensed=True),
-        fill=AMARELO,
-    )
-
-    texto_atual = _moeda(preco)
-
-    fonte_atual = _fonte_que_cabe(
-        draw,
-        texto_atual,
-        tamanho_inicial=54,
-        tamanho_minimo=38,
-        largura=305,
-    )
-
-    draw.text(
-        (305, 918),
-        texto_atual,
-        font=fonte_atual,
-        fill=AMARELO,
-        stroke_width=1,
-        stroke_fill=AMARELO,
-    )
-
-
-# =========================================================
-# ARTE
-# =========================================================
-
-def gerar_arte_produto(produto, destino, posicao):
-    if not TEMPLATE_PATH.exists():
-        raise RuntimeError(
-            f"Template limpo não encontrado: {TEMPLATE_PATH}"
-        )
-
-    imagem = Image.open(TEMPLATE_PATH).convert("RGB")
-    draw = ImageDraw.Draw(imagem)
-
-    # -----------------------------------------------------
-    # TÍTULO
-    # -----------------------------------------------------
-    fonte_titulo, linhas, tamanho = _titulo_ajustado(
-        draw,
-        produto.get("nome", "Produto"),
-    )
-
-    y = 345
-
-    for linha in linhas:
-        draw.text(
-            (52, y),
-            linha,
-            font=fonte_titulo,
-            fill=AZUL,
-        )
-        y += tamanho + 8
-
-    # -----------------------------------------------------
-    # INFORMAÇÕES
-    # -----------------------------------------------------
-    categoria = produto.get("categoria") or "Geral"
-    ranking = produto.get("ranking")
-
-    infos = [
-        "Uma das melhores promoções do dia",
-        f"Categoria: {categoria}",
-        (
-            f"Ranking Mercado Livre: #{ranking}"
-            if ranking is not None
-            else "Confira a oferta no nosso grupo"
-        ),
-    ]
-
-    y_info = max(505, y + 25)
-
-    for info in infos:
-        # Evita chegar perto do selo.
-        if y_info > 625:
             break
 
-        draw.text(
-            (52, y_info),
-            "✓",
-            font=_fonte(29, bold=True),
-            fill="#00B61F",
-        )
+        tamanho -= 4
 
-        # Reduz a fonte até cada info caber em uma única linha.
-        fonte_info = _fonte_que_cabe(
+    font = fonte(
+        tamanho,
+        True,
+    )
+
+    linhas = quebrar_texto(
+        draw,
+        titulo.upper(),
+        font,
+        largura_maxima,
+    )
+
+    y = 340
+
+    espacamento = 8
+
+    for linha in linhas[:3]:
+
+        largura, altura = texto_tamanho(
             draw,
-            info,
-            tamanho_inicial=27,
-            tamanho_minimo=20,
-            largura=515,
+            linha,
+            font,
+        )
+
+        x = 55
+
+        draw.text(
+            (
+                x,
+                y,
+            ),
+            linha,
+            font=font,
+            fill=BRANCO,
+        )
+
+        y += altura + espacamento
+
+    return y
+
+
+# ============================================================
+# INFORMAÇÕES
+# ============================================================
+
+def desenhar_informacoes(
+    draw,
+    y,
+    categoria,
+    ranking,
+):
+    font = fonte(
+        31,
+        False,
+    )
+
+    cor = BRANCO
+
+    informacoes = [
+        f"Categoria: {categoria}",
+        f"Ranking Mercado Livre: #{ranking}",
+    ]
+
+    for texto in informacoes:
+
+        draw.text(
+            (
+                60,
+                y,
+            ),
+            "✓",
+            font=fonte(
+                34,
+                True,
+            ),
+            fill=VERDE,
         )
 
         draw.text(
-            (88, y_info + 1),
-            info,
-            font=fonte_info,
+            (
+                105,
+                y + 2,
+            ),
+            texto,
+            font=font,
+            fill=cor,
+        )
+
+        y += 54
+
+    return y
+
+
+# ============================================================
+# SELO DE DESCONTO
+# ============================================================
+
+def desenhar_desconto(
+    draw,
+    percentual,
+    centro_x,
+    centro_y,
+):
+    """
+    Cria um selo de desconto separado.
+    """
+
+    raio = 85
+
+    draw.ellipse(
+        (
+            centro_x - raio,
+            centro_y - raio,
+            centro_x + raio,
+            centro_y + raio,
+        ),
+        fill=VERDE,
+        outline=BRANCO,
+        width=6,
+    )
+
+    texto = f"{percentual}% OFF"
+
+    font = fonte(
+        30,
+        True,
+    )
+
+    largura, altura = texto_tamanho(
+        draw,
+        texto,
+        font,
+    )
+
+    draw.text(
+        (
+            centro_x - largura // 2,
+            centro_y - altura // 2,
+        ),
+        texto,
+        font=font,
+        fill=BRANCO,
+    )
+
+
+# ============================================================
+# PREÇOS
+# ============================================================
+
+def desenhar_precos(
+    draw,
+    preco_antigo,
+    preco_atual,
+    percentual,
+):
+    """
+    Área exclusiva para preços.
+
+    Evita sobreposição entre preço antigo,
+    POR e preço atual.
+    """
+
+    centro_x = 270
+
+    y = 910
+
+    # --------------------------------------------------------
+    # DESCONTO
+    # --------------------------------------------------------
+
+    if percentual:
+
+        desenhar_desconto(
+            draw,
+            percentual,
+            270,
+            835,
+        )
+
+    # --------------------------------------------------------
+    # PREÇO ANTIGO
+    # --------------------------------------------------------
+
+    if preco_antigo:
+
+        texto_antigo = (
+            f"DE R${preco_antigo}"
+        )
+
+        font_antigo = fonte(
+            34,
+            True,
+        )
+
+        largura, altura = texto_tamanho(
+            draw,
+            texto_antigo,
+            font_antigo,
+        )
+
+        x = (
+            centro_x
+            - largura // 2
+        )
+
+        draw.text(
+            (
+                x,
+                y,
+            ),
+            texto_antigo,
+            font=font_antigo,
             fill=AZUL,
         )
 
-        y_info += 50
+        # Linha de desconto
+        draw.line(
+            (
+                x,
+                y + altura // 2,
+                x + largura,
+                y + altura // 2,
+            ),
+            fill=AZUL,
+            width=5,
+        )
 
-    # -----------------------------------------------------
-    # PRODUTO
-    # -----------------------------------------------------
-    _colar_produto_no_circulo(
+        y += 58
+
+    # --------------------------------------------------------
+    # POR
+    # --------------------------------------------------------
+
+    font_por = fonte(
+        34,
+        True,
+    )
+
+    largura, altura = texto_tamanho(
+        draw,
+        "POR",
+        font_por,
+    )
+
+    draw.text(
+        (
+            centro_x - largura // 2,
+            y,
+        ),
+        "POR",
+        font=font_por,
+        fill=AMARELO,
+    )
+
+    y += 45
+
+    # --------------------------------------------------------
+    # PREÇO ATUAL
+    # --------------------------------------------------------
+
+    font_atual = fonte(
+        58,
+        True,
+    )
+
+    texto_atual = (
+        f"R${preco_atual}"
+    )
+
+    # Reduz automaticamente se ficar muito largo
+
+    while True:
+
+        largura, altura = texto_tamanho(
+            draw,
+            texto_atual,
+            font_atual,
+        )
+
+        if largura <= 470:
+            break
+
+        tamanho_atual = max(
+            42,
+            font_atual.size - 3,
+        )
+
+        font_atual = fonte(
+            tamanho_atual,
+            True,
+        )
+
+    largura, altura = texto_tamanho(
+        draw,
+        texto_atual,
+        font_atual,
+    )
+
+    draw.text(
+        (
+            centro_x - largura // 2,
+            y,
+        ),
+        texto_atual,
+        font=font_atual,
+        fill=AMARELO,
+    )
+
+
+# ============================================================
+# ROBÔS
+# ============================================================
+
+def desenhar_robo(
+    imagem,
+    caminho,
+    x,
+    y,
+    largura=210,
+):
+    """
+    Coloca um robô sem deformá-lo.
+    """
+
+    robo = carregar_imagem(
+        caminho
+    )
+
+    if robo is None:
+        return
+
+    proporcao = (
+        largura / robo.width
+    )
+
+    altura = int(
+        robo.height * proporcao
+    )
+
+    robo = robo.resize(
+        (
+            largura,
+            altura,
+        ),
+        Image.Resampling.LANCZOS,
+    )
+
+    imagem.alpha_composite(
+        robo,
+        (
+            x,
+            y,
+        ),
+    )
+
+
+# ============================================================
+# RODAPÉ
+# ============================================================
+
+def desenhar_rodape(
+    imagem,
+    draw,
+):
+    """
+    Chamada para o grupo de promoções.
+    """
+
+    topo = 1160
+
+    # Faixa branca
+    draw.rounded_rectangle(
+        (
+            35,
+            topo,
+            LARGURA - 35,
+            ALTURA - 30,
+        ),
+        radius=35,
+        fill=BRANCO,
+    )
+
+    texto1 = (
+        "ENTRE NO GRUPO E RECEBA"
+    )
+
+    texto2 = (
+        "AS MELHORES PROMOÇÕES!"
+    )
+
+    font1 = fonte(
+        36,
+        True,
+    )
+
+    font2 = fonte(
+        36,
+        True,
+    )
+
+    desenhar_texto_centralizado(
+        draw,
+        texto1,
+        topo + 25,
+        font1,
+        AZUL_ESCURO,
+    )
+
+    desenhar_texto_centralizado(
+        draw,
+        texto2,
+        topo + 72,
+        font2,
+        AZUL_ESCURO,
+    )
+
+    # Botão
+    botao_largura = 360
+    botao_altura = 58
+
+    botao_x = (
+        LARGURA
+        - botao_largura
+    ) // 2
+
+    botao_y = topo + 135
+
+    draw.rounded_rectangle(
+        (
+            botao_x,
+            botao_y,
+            botao_x + botao_largura,
+            botao_y + botao_altura,
+        ),
+        radius=30,
+        fill=VERDE,
+    )
+
+    texto_botao = "LINK NA BIO"
+
+    font_botao = fonte(
+        31,
+        True,
+    )
+
+    largura, altura = texto_tamanho(
+        draw,
+        texto_botao,
+        font_botao,
+    )
+
+    draw.text(
+        (
+            LARGURA // 2 - largura // 2,
+            botao_y + 10,
+        ),
+        texto_botao,
+        font=font_botao,
+        fill=BRANCO,
+    )
+
+
+# ============================================================
+# GERADOR PRINCIPAL
+# ============================================================
+
+def gerar_arte(
+    produto,
+    caminho_saida=None,
+):
+    """
+    Gera uma arte individual para Instagram.
+
+    Espera um dicionário semelhante a:
+
+    {
+        "titulo": "...",
+        "categoria": "Games",
+        "ranking": 5,
+        "preco_antigo": "699,00",
+        "preco_atual": "469,00",
+        "desconto": 33,
+        "imagem": "/caminho/foto.png"
+    }
+    """
+
+    # --------------------------------------------------------
+    # FUNDO
+    # --------------------------------------------------------
+
+    imagem = Image.new(
+        "RGBA",
+        (
+            LARGURA,
+            ALTURA,
+        ),
+        AZUL_ESCURO,
+    )
+
+    draw = ImageDraw.Draw(
+        imagem
+    )
+
+    # --------------------------------------------------------
+    # ELEMENTOS DECORATIVOS
+    # --------------------------------------------------------
+
+    draw.rectangle(
+        (
+            0,
+            0,
+            LARGURA,
+            18,
+        ),
+        fill=VERDE,
+    )
+
+    draw.rectangle(
+        (
+            0,
+            18,
+            LARGURA,
+            30,
+        ),
+        fill=AMARELO,
+    )
+
+    # --------------------------------------------------------
+    # LOGO
+    # --------------------------------------------------------
+
+    logo = carregar_imagem(
+        LOGO_PATH
+    )
+
+    if logo:
+
+        logo.thumbnail(
+            (
+                430,
+                150,
+            ),
+            Image.Resampling.LANCZOS,
+        )
+
+        imagem.alpha_composite(
+            logo,
+            (
+                45,
+                50,
+            ),
+        )
+
+    # --------------------------------------------------------
+    # CATEGORIA
+    # --------------------------------------------------------
+
+    categoria = str(
+        produto.get(
+            "categoria",
+            "Promoção",
+        )
+    )
+
+    draw.rounded_rectangle(
+        (
+            55,
+            215,
+            270,
+            265,
+        ),
+        radius=25,
+        fill=AZUL,
+    )
+
+    draw.text(
+        (
+            80,
+            223,
+        ),
+        categoria.upper(),
+        font=fonte(
+            23,
+            True,
+        ),
+        fill=BRANCO,
+    )
+
+    # --------------------------------------------------------
+    # RANKING
+    # --------------------------------------------------------
+
+    ranking = produto.get(
+        "ranking"
+    )
+
+    if ranking:
+
+        texto_ranking = (
+            f"TOP {ranking}"
+        )
+
+        draw.text(
+            (
+                55,
+                285,
+            ),
+            texto_ranking,
+            font=fonte(
+                29,
+                True,
+            ),
+            fill=AMARELO,
+        )
+
+    # --------------------------------------------------------
+    # TÍTULO
+    # --------------------------------------------------------
+
+    titulo = str(
+        produto.get(
+            "titulo",
+            "Produto em promoção",
+        )
+    )
+
+    desenhar_titulo(
         imagem,
-        produto["imagem"],
+        draw,
+        titulo,
     )
 
-    # -----------------------------------------------------
-    # DESCONTO E PREÇOS
-    # -----------------------------------------------------
-    desconto = float(
-        produto.get("desconto_instagram", 0) or 0
+    # --------------------------------------------------------
+    # INFORMAÇÕES
+    # --------------------------------------------------------
+
+    y_info = 570
+
+    y_info = desenhar_informacoes(
+        draw,
+        y_info,
+        categoria,
+        produto.get(
+            "ranking",
+            "-",
+        ),
     )
 
-    _desenhar_selo(draw, desconto)
-    _desenhar_precos(draw, produto)
+    # --------------------------------------------------------
+    # CÍRCULO DO PRODUTO
+    # --------------------------------------------------------
 
-    # -----------------------------------------------------
-    # SALVAR
-    # -----------------------------------------------------
-    destino = Path(destino)
-    destino.parent.mkdir(parents=True, exist_ok=True)
+    imagem_produto = produto.get(
+        "imagem"
+    )
 
-    imagem.save(
-        destino,
-        "JPEG",
-        quality=95,
+    circulo = criar_area_produto(
+        imagem_produto,
+        tamanho=470,
+    )
+
+    imagem.alpha_composite(
+        circulo,
+        (
+            570,
+            360,
+        ),
+    )
+
+    # --------------------------------------------------------
+    # PREÇOS
+    # --------------------------------------------------------
+
+    desenhar_precos(
+        draw,
+        produto.get(
+            "preco_antigo"
+        ),
+        produto.get(
+            "preco_atual",
+            "0,00",
+        ),
+        produto.get(
+            "desconto"
+        ),
+    )
+
+    # --------------------------------------------------------
+    # ROBÔS
+    # --------------------------------------------------------
+
+    desenhar_robo(
+        imagem,
+        ROBO_FEMININO_PATH,
+        35,
+        880,
+        largura=190,
+    )
+
+    desenhar_robo(
+        imagem,
+        ROBO_MASCULINO_PATH,
+        700,
+        880,
+        largura=190,
+    )
+
+    # --------------------------------------------------------
+    # RODAPÉ
+    # --------------------------------------------------------
+
+    desenhar_rodape(
+        imagem,
+        draw,
+    )
+
+    # --------------------------------------------------------
+    # SAÍDA
+    # --------------------------------------------------------
+
+    PASTA_SAIDA.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    if caminho_saida is None:
+
+        ml_id = produto.get(
+            "ml_id",
+            "produto",
+        )
+
+        caminho_saida = (
+            PASTA_SAIDA
+            / f"{ml_id}.png"
+        )
+
+    else:
+        caminho_saida = Path(
+            caminho_saida
+        )
+
+        caminho_saida.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+    imagem.convert(
+        "RGB"
+    ).save(
+        caminho_saida,
+        "PNG",
         optimize=True,
     )
 
-    return destino
+    print(
+        f"🖼️ Arte Instagram criada: "
+        f"{caminho_saida}"
+    )
 
-
-# =========================================================
-# LOTE
-# =========================================================
-
-def _normalizar_nome_arquivo(texto):
-    texto = str(texto or "produto")
-    texto = re.sub(r"[^a-zA-Z0-9_-]+", "_", texto)
-    texto = re.sub(r"_+", "_", texto)
-    return texto.strip("_")[:60] or "produto"
-
-
-def gerar_artes_top(produtos):
-    data = datetime.now(FUSO_BRASIL).strftime("%Y-%m-%d")
-    pasta = GERADAS_ROOT / data
-    pasta.mkdir(parents=True, exist_ok=True)
-
-    # Recria as artes do dia.
-    for antigo in pasta.glob("*.jpg"):
-        antigo.unlink(missing_ok=True)
-
-    artes = []
-
-    for posicao, produto in enumerate(produtos, start=1):
-        ml_id = _normalizar_nome_arquivo(produto.get("ml_id"))
-        arquivo = pasta / f"{posicao:02d}_{ml_id}.jpg"
-
-        gerar_arte_produto(
-            produto=produto,
-            destino=arquivo,
-            posicao=posicao,
-        )
-
-        artes.append({
-            "posicao": posicao,
-            "nome": produto.get("nome"),
-            "ml_id": produto.get("ml_id"),
-            "arquivo": arquivo.relative_to(STATIC_ROOT).as_posix(),
-        })
-
-    return {
-        "data_chave": data,
-        "artes": artes,
-    }
-
-
-def listar_artes_do_dia():
-    data = datetime.now(FUSO_BRASIL).strftime("%Y-%m-%d")
-    pasta = GERADAS_ROOT / data
-
-    if not pasta.exists():
-        return []
-
-    artes = []
-
-    for arquivo in sorted(pasta.glob("*.jpg")):
-        try:
-            posicao = int(arquivo.stem.split("_", 1)[0])
-        except (ValueError, IndexError):
-            posicao = 999
-
-        artes.append({
-            "posicao": posicao,
-            "arquivo": arquivo.relative_to(STATIC_ROOT).as_posix(),
-        })
-
-    return artes
+    return caminho_saida
