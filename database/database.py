@@ -42,3 +42,4 @@ def criar_tabelas():
     from database.migrator import aplicar_migracoes
 
     aplicar_migracoes()
+

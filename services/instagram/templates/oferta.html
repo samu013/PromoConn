@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 1080px;
+            height: 1350px;
+            overflow: hidden;
+        }
+
+        body {
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    #071426 0%,
+                    #0c1f38 45%,
+                    #07111f 100%
+                );
+
+            color: #ffffff;
+        }
+
+        .arte {
+            position: relative;
+
+            width: 1080px;
+            height: 1350px;
+
+            overflow: hidden;
+
+            padding: 64px 70px 54px;
+
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* =========================
+           ELEMENTOS DECORATIVOS
+           ========================= */
+
+        .glow {
+            position: absolute;
+
+            width: 520px;
+            height: 520px;
+
+            border-radius: 50%;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(44, 214, 126, 0.20) 0%,
+                    rgba(44, 214, 126, 0.07) 40%,
+                    transparent 70%
+                );
+
+            top: -170px;
+            right: -160px;
+
+            pointer-events: none;
+        }
+
+        .glow2 {
+            position: absolute;
+
+            width: 420px;
+            height: 420px;
+
+            border-radius: 50%;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(255, 204, 64, 0.12) 0%,
+                    transparent 68%
+                );
+
+            bottom: 90px;
+            left: -230px;
+
+            pointer-events: none;
+        }
+
+        .linha {
+            position: absolute;
+
+            width: 700px;
+            height: 700px;
+
+            border: 2px solid rgba(255,255,255,0.035);
+
+            border-radius: 50%;
+
+            right: -430px;
+            top: 330px;
+        }
+
+        /* =========================
+           CABEÇALHO
+           ========================= */
+
+        .cabecalho {
+            position: relative;
+            z-index: 2;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            height: 90px;
+        }
+
+        .marca {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            width: 58px;
+            height: 58px;
+
+            border-radius: 17px;
+
+            background: #ffffff;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            overflow: hidden;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+
+            object-fit: contain;
+        }
+
+        .marca-texto {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .marca-nome {
+            font-size: 27px;
+            font-weight: 900;
+
+            letter-spacing: 1px;
+        }
+
+        .marca-sub {
+            font-size: 13px;
+
+            color: rgba(255,255,255,0.58);
+
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+        }
+
+        .badge-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            padding: 13px 19px;
+
+            border-radius: 999px;
+
+            background: rgba(255,255,255,0.08);
+
+            border: 1px solid rgba(255,255,255,0.12);
+
+            font-size: 18px;
+            font-weight: 800;
+
+            letter-spacing: 0.5px;
+        }
+
+        .badge-top strong {
+            color: #ffd33d;
+        }
+
+        /* =========================
+           TÍTULO
+           ========================= */
+
+        .hero {
+            position: relative;
+            z-index: 2;
+
+            margin-top: 46px;
+        }
+
+        .tag {
+            display: inline-flex;
+
+            align-items: center;
+
+            padding: 10px 18px;
+
+            border-radius: 999px;
+
+            background: rgba(40, 220, 125, 0.13);
+
+            border: 1px solid rgba(40, 220, 125, 0.25);
+
+            color: #56e79b;
+
+            font-size: 15px;
+            font-weight: 800;
+
+            letter-spacing: 1.5px;
+
+            text-transform: uppercase;
+        }
+
+        .titulo-oferta {
+            margin: 20px 0 0;
+
+            font-size: 60px;
+
+            line-height: 0.98;
+
+            letter-spacing: -2px;
+
+            font-weight: 950;
+        }
+
+        .titulo-oferta span {
+            color: #56e79b;
+        }
+
+        /* =========================
+           PRODUTO
+           ========================= */
+
+        .produto-area {
+            position: relative;
+            z-index: 2;
+
+            height: 510px;
+
+            margin-top: 30px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+        }
+
+        .produto-glow {
+            position: absolute;
+
+            width: 500px;
+            height: 500px;
+
+            border-radius: 50%;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(255,255,255,0.11) 0%,
+                    rgba(255,255,255,0.035) 48%,
+                    transparent 70%
+                );
+        }
+
+        .produto-card {
+            position: relative;
+
+            width: 690px;
+            height: 470px;
+
+            border-radius: 42px;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(255,255,255,0.12),
+                    rgba(255,255,255,0.045)
+                );
+
+            border: 1px solid rgba(255,255,255,0.13);
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            overflow: hidden;
+        }
+
+        .produto-card::after {
+            content: "";
+
+            position: absolute;
+
+            width: 350px;
+            height: 350px;
+
+            border-radius: 50%;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(255,255,255,0.09),
+                    transparent 70%
+                );
+
+            pointer-events: none;
+        }
+
+        .produto-imagem {
+            position: relative;
+
+            z-index: 2;
+
+            width: 430px;
+            height: 390px;
+
+            object-fit: contain;
+
+            filter:
+                drop-shadow(
+                    0 25px 35px rgba(0,0,0,0.38)
+                );
+        }
+
+        /* =========================
+           INFORMAÇÕES
+           ========================= */
+
+        .informacoes {
+            position: relative;
+            z-index: 3;
+
+            margin-top: 18px;
+        }
+
+        .categoria {
+            color: #56e79b;
+
+            font-size: 14px;
+
+            font-weight: 900;
+
+            letter-spacing: 1.6px;
+
+            text-transform: uppercase;
+        }
+
+        .produto-titulo {
+            margin-top: 9px;
+
+            font-size: 29px;
+
+            line-height: 1.12;
+
+            font-weight: 800;
+
+            max-width: 850px;
+
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+
+            overflow: hidden;
+        }
+
+        /* =========================
+           PREÇO
+           ========================= */
+
+        .precos {
+            position: relative;
+            z-index: 3;
+
+            margin-top: 20px;
+
+            display: flex;
+
+            align-items: flex-end;
+
+            justify-content: space-between;
+        }
+
+        .preco-esquerda {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preco-antigo {
+            font-size: 19px;
+
+            color: rgba(255,255,255,0.48);
+
+            text-decoration: line-through;
+
+            font-weight: 600;
+        }
+
+        .preco-label {
+            margin-top: 2px;
+
+            font-size: 14px;
+
+            color: rgba(255,255,255,0.52);
+
+            text-transform: uppercase;
+
+            letter-spacing: 1px;
+        }
+
+        .preco-atual {
+            margin-top: 2px;
+
+            font-size: 53px;
+
+            line-height: 0.95;
+
+            color: #ffffff;
+
+            font-weight: 950;
+
+            letter-spacing: -2px;
+        }
+
+        .preco-atual span {
+            font-size: 25px;
+
+            letter-spacing: 0;
+        }
+
+        .desconto {
+            min-width: 155px;
+
+            padding: 17px 20px;
+
+            border-radius: 20px;
+
+            background: #42dd8a;
+
+            color: #061a12;
+
+            text-align: center;
+
+            box-shadow:
+                0 12px 30px rgba(66,221,138,0.17);
+        }
+
+        .desconto-numero {
+            font-size: 31px;
+
+            line-height: 1;
+
+            font-weight: 950;
+        }
+
+        .desconto-texto {
+            margin-top: 4px;
+
+            font-size: 12px;
+
+            font-weight: 900;
+
+            letter-spacing: 1.5px;
+        }
+
+        /* =========================
+           RODAPÉ
+           ========================= */
+
+        .rodape {
+            position: relative;
+            z-index: 3;
+
+            margin-top: auto;
+
+            padding-top: 25px;
+
+            border-top:
+                1px solid rgba(255,255,255,0.09);
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+        }
+
+        .rodape-esquerda {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .rodape-titulo {
+            font-size: 17px;
+
+            font-weight: 900;
+        }
+
+        .rodape-sub {
+            font-size: 13px;
+
+            color: rgba(255,255,255,0.48);
+        }
+
+        .cta {
+            padding: 13px 19px;
+
+            border-radius: 13px;
+
+            background: rgba(255,255,255,0.08);
+
+            border: 1px solid rgba(255,255,255,0.10);
+
+            font-size: 14px;
+
+            font-weight: 800;
+
+            color: #ffffff;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="arte">
+
+    <div class="glow"></div>
+    <div class="glow2"></div>
+    <div class="linha"></div>
+
+    <header class="cabecalho">
+
+        <div class="marca">
+
+            <div class="logo">
+
+                {% if logo %}
+                    <img src="{{ logo }}">
+                {% else %}
+                    <span>🔥</span>
+                {% endif %}
+
+            </div>
+
+            <div class="marca-texto">
+
+                <div class="marca-nome">
+                    PROMOCONN
+                </div>
+
+                <div class="marca-sub">
+                    Ofertas que valem a pena
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="badge-top">
+
+            🔥
+
+            <span>
+                TOP <strong>#{{ ranking }}</strong>
+            </span>
+
+        </div>
+
+    </header>
+
+
+    <section class="hero">
+
+        <div class="tag">
+            🔥 Oferta encontrada
+        </div>
+
+        <h1 class="titulo-oferta">
+            OPORTUNIDADE<br>
+            <span>DO DIA</span>
+        </h1>
+
+    </section>
+
+
+    <section class="produto-area">
+
+        <div class="produto-glow"></div>
+
+        <div class="produto-card">
+
+            {% if imagem %}
+
+                <img
+                    class="produto-imagem"
+                    src="{{ imagem }}"
+                    alt="Produto em promoção"
+                >
+
+            {% else %}
+
+                <div
+                    style="
+                        font-size: 24px;
+                        color: rgba(255,255,255,0.4);
+                    "
+                >
+                    Imagem indisponível
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <section class="informacoes">
+
+        <div class="categoria">
+            {{ categoria }}
+        </div>
+
+        <div class="produto-titulo">
+            {{ titulo }}
+        </div>
+
+    </section>
+
+
+    <section class="precos">
+
+        <div class="preco-esquerda">
+
+            <div class="preco-label">
+                De
+            </div>
+
+            <div class="preco-antigo">
+                R$ {{ preco_antigo }}
+            </div>
+
+            <div class="preco-label">
+                Por apenas
+            </div>
+
+            <div class="preco-atual">
+                <span>R$</span>
+                {{ preco_atual }}
+            </div>
+
+        </div>
+
+
+        <div class="desconto">
+
+            <div class="desconto-numero">
+                {{ desconto }}%
+            </div>
+
+            <div class="desconto-texto">
+                DE DESCONTO
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <footer class="rodape">
+
+        <div class="rodape-esquerda">
+
+            <div class="rodape-titulo">
+                🔥 As melhores ofertas estão no PromoConn
+            </div>
+
+            <div class="rodape-sub">
+                Acompanhe nossas promoções e não perca as oportunidades.
+            </div>
+
+        </div>
+
+        <div class="cta">
+            CONFIRA A OFERTA →
+        </div>
+
+    </footer>
+
+</div>
+
+</body>
+</html>
