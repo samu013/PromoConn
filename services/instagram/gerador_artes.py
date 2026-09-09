@@ -1264,13 +1264,8 @@ def gerar_artes_top(produtos):
 
 def listar_artes_do_dia():
     """
-    Lista as artes PNG geradas no dia.
-
-    Como o Render pode reiniciar o serviço e o diretório
-    pode ser limpo, esta função serve principalmente para
-    uso local e visualização durante o processo.
+    Lista as artes geradas e prepara os dados para o template do Instagram.
     """
-
     if not PASTA_SAIDA.exists():
         return []
 
@@ -1280,4 +1275,25 @@ def listar_artes_do_dia():
         reverse=True,
     )
 
-    return arquivos
+    artes = []
+
+    for posicao, arquivo in enumerate(arquivos[:5], start=1):
+        try:
+            caminho_relativo = arquivo.relative_to(
+                BASE_DIR / "static"
+            )
+
+            artes.append(
+                {
+                    "arquivo": caminho_relativo.as_posix(),
+                    "posicao": posicao,
+                }
+            )
+
+        except ValueError:
+            print(
+                f"⚠️ Não foi possível montar o caminho da arte: "
+                f"{arquivo}"
+            )
+
+    return artes
