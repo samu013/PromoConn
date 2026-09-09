@@ -7,6 +7,9 @@ from zoneinfo import ZoneInfo
 
 from database.database import conectar
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 FUSO_BRASIL = ZoneInfo(
     "America/Sao_Paulo"

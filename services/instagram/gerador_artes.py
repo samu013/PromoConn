@@ -1,270 +1,265 @@
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import urlparse
 import base64
-import html
+import mimetypes
 
+import requests
 from jinja2 import Template
 
-from .renderer import renderizar_html
+from services.instagram.renderer import renderizar_html
 
-
-# ============================================================
-# CONFIGURAÇÃO
-# ============================================================
-
-LARGURA = 1080
-ALTURA = 1350
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-PASTA_IMAGENS = (
+PASTA_SAIDA = (
     BASE_DIR
     / "static"
     / "img"
-)
-
-PASTA_INSTAGRAM = (
-    PASTA_IMAGENS
     / "instagram"
-)
-
-PASTA_SAIDA = (
-    PASTA_INSTAGRAM
     / "geradas"
 )
 
-PASTA_TEMPLATES = (
-    Path(__file__).resolve().parent
-    / "templates"
-)
-
 TEMPLATE_PATH = (
-    PASTA_TEMPLATES
+    BASE_DIR
+    / "services"
+    / "instagram"
+    / "templates"
     / "oferta.html"
 )
 
 LOGO_PATH = (
-    PASTA_INSTAGRAM
+    BASE_DIR
+    / "static"
+    / "img"
+    / "instagram"
     / "logo.png"
 )
 
 
-# ============================================================
-# UTILITÁRIOS
-# ============================================================
-
-def escapar(valor):
+def converter_numero(valor, padrao=0.0):
     """
-    Escapa texto para utilização segura no HTML.
-    """
+    Converte valores que podem vir como:
+        2498
+        2498.50
+        "2498.50"
+        "2.498,50"
+        "R$ 2.498,50"
+        None
 
-    if valor is None:
-        return ""
-
-    return html.escape(
-        str(valor),
-        quote=True,
-    )
-
-
-def formatar_preco(valor):
-    """
-    Normaliza preços para o formato brasileiro.
+    para float.
     """
 
     if valor is None:
-        return "0,00"
+        return padrao
+
+    if isinstance(valor, (int, float)):
+        return float(valor)
 
     texto = str(valor).strip()
 
     if not texto:
-        return "0,00"
+        return padrao
 
+    # Remove moeda e espaços
     texto = (
         texto
         .replace("R$", "")
+        .replace("r$", "")
         .replace(" ", "")
     )
 
-    # Já está no formato brasileiro.
-    if "," in texto:
-        try:
-            numero = float(
-                texto.replace(".", "").replace(",", ".")
-            )
+    # Formato brasileiro: 2.498,50
+    if "." in texto and "," in texto:
+        texto = texto.replace(".", "").replace(",", ".")
 
-            return f"{numero:,.2f}".replace(
-                ",",
-                "X",
-            ).replace(
-                ".",
-                ",",
-            ).replace(
-                "X",
-                ".",
-            )
+    # Apenas vírgula: 2498,50
+    elif "," in texto:
+        texto = texto.replace(",", ".")
 
-        except ValueError:
-            return texto
-
+    # Apenas ponto: 2498.50
     try:
-        numero = float(texto)
-
-        return f"{numero:,.2f}".replace(
-            ",",
-            "X",
-        ).replace(
-            ".",
-            ",",
-        ).replace(
-            "X",
-            ".",
-        )
-
-    except ValueError:
-        return texto
-
-
-def formatar_desconto(valor):
-    """
-    Formata o desconto evitando casas decimais
-    desnecessárias.
-    """
-
-    if valor is None:
-        return "0"
-
-    try:
-        numero = float(valor)
-
-        if numero.is_integer():
-            return str(int(numero))
-
-        return f"{numero:.1f}".replace(
-            ".",
-            ",",
-        )
-
+        return float(texto)
     except (ValueError, TypeError):
-        return str(valor)
+        return padrao
 
 
-# ============================================================
-# IMAGENS
-# ============================================================
-
-def imagem_para_data_uri(caminho):
-    """
-    Converte uma imagem local para Data URI.
-
-    Isso permite que o Chromium carregue imagens
-    locais durante a geração da arte.
-    """
-
-    caminho = Path(caminho)
-
-    if not caminho.exists():
-        return None
-
-    extensao = caminho.suffix.lower()
-
-    tipos = {
-        ".png": "image/png",
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".webp": "image/webp",
-        ".gif": "image/gif",
-    }
-
-    mime = tipos.get(
-        extensao,
-        "application/octet-stream",
-    )
-
-    dados = caminho.read_bytes()
-
-    encoded = base64.b64encode(
-        dados
-    ).decode("ascii")
-
-    return (
-        f"data:{mime};base64,{encoded}"
-    )
-
-
-def preparar_imagem(imagem):
+def preparar_imagem(origem):
     """
     Aceita:
-
-    - URL HTTP/HTTPS
+    - URL http/https
     - caminho local
-    - Path
+    - data URI
+
+    Retorna uma imagem que o Playwright consiga renderizar.
     """
 
-    if not imagem:
-        return None
+    if not origem:
+        return ""
 
-    texto = str(imagem).strip()
+    origem = str(origem).strip()
 
-    if not texto:
-        return None
+    if origem.startswith("data:image/"):
+        return origem
 
-    # URL remota.
-    if texto.startswith("http://"):
-        return texto
+    # =========================================================
+    # IMAGEM REMOTA
+    # =========================================================
 
-    if texto.startswith("https://"):
-        return texto
+    if origem.startswith(("http://", "https://")):
 
-    # Arquivo local.
-    caminho = Path(texto)
+        try:
+            resposta = requests.get(
+                origem,
+                timeout=20,
+                headers={
+                    "User-Agent": (
+                        "Mozilla/5.0 "
+                        "(Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 "
+                        "Chrome/131.0 Safari/537.36"
+                    )
+                },
+            )
 
-    if caminho.exists():
-        return imagem_para_data_uri(
-            caminho
+            resposta.raise_for_status()
+
+            content_type = resposta.headers.get(
+                "Content-Type",
+                "image/jpeg",
+            )
+
+            if not content_type.startswith("image/"):
+                content_type = "image/jpeg"
+
+            encoded = base64.b64encode(
+                resposta.content
+            ).decode("utf-8")
+
+            print("✅ Imagem preparada para a arte.")
+
+            return (
+                f"data:{content_type};base64,{encoded}"
+            )
+
+        except Exception as erro:
+            print(
+                f"⚠️ Não foi possível baixar imagem: {erro}"
+            )
+
+            return origem
+
+    # =========================================================
+    # IMAGEM LOCAL
+    # =========================================================
+
+    caminho = Path(origem)
+
+    if not caminho.is_absolute():
+        caminho = BASE_DIR / caminho
+
+    if not caminho.exists():
+        print(
+            f"⚠️ Imagem local não encontrada: {caminho}"
+        )
+        return ""
+
+    try:
+        mime = mimetypes.guess_type(
+            str(caminho)
+        )[0] or "image/png"
+
+        encoded = base64.b64encode(
+            caminho.read_bytes()
+        ).decode("utf-8")
+
+        return (
+            f"data:{mime};base64,{encoded}"
         )
 
-    # Caminho relativo ao projeto.
-    caminho_projeto = (
-        BASE_DIR
-        / texto.lstrip("/")
-        .replace("/", "\\")
-    )
-
-    if caminho_projeto.exists():
-        return imagem_para_data_uri(
-            caminho_projeto
+    except Exception as erro:
+        print(
+            f"⚠️ Erro ao preparar imagem local: {erro}"
         )
-
-    return None
+        return ""
 
 
 def preparar_logo():
     """
-    Prepara a logo do PromoConn.
+    Carrega a logo ORIGINAL da PromoConn.
+
+    O arquivo não é alterado nem recriado.
     """
 
     if not LOGO_PATH.exists():
-        return None
 
-    return imagem_para_data_uri(
-        LOGO_PATH
+        print(
+            f"⚠️ Logo não encontrada: {LOGO_PATH}"
+        )
+
+        return ""
+
+    try:
+
+        mime = mimetypes.guess_type(
+            str(LOGO_PATH)
+        )[0] or "image/png"
+
+        encoded = base64.b64encode(
+            LOGO_PATH.read_bytes()
+        ).decode("utf-8")
+
+        print("✅ Logo original carregada.")
+
+        return (
+            f"data:{mime};base64,{encoded}"
+        )
+
+    except Exception as erro:
+
+        print(
+            f"⚠️ Erro ao carregar logo: {erro}"
+        )
+
+        return ""
+
+
+def limpar_artes_anteriores():
+    """
+    Remove as artes anteriores para evitar
+    que uma arte de teste apareça no lugar
+    das artes novas.
+    """
+
+    PASTA_SAIDA.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    removidas = 0
+
+    for arquivo in PASTA_SAIDA.glob("*.png"):
+
+        try:
+            arquivo.unlink()
+            removidas += 1
+
+        except Exception as erro:
+            print(
+                f"⚠️ Não foi possível remover "
+                f"{arquivo.name}: {erro}"
+            )
+
+    print(
+        f"🧹 Artes antigas removidas: {removidas}"
     )
 
 
-# ============================================================
-# TEMPLATE
-# ============================================================
-
 def carregar_template():
-    """
-    Carrega o template HTML.
-    """
 
     if not TEMPLATE_PATH.exists():
+
         raise FileNotFoundError(
-            f"Template não encontrado: "
-            f"{TEMPLATE_PATH}"
+            f"Template não encontrado: {TEMPLATE_PATH}"
         )
 
     return Template(
@@ -274,253 +269,245 @@ def carregar_template():
     )
 
 
-# ============================================================
-# GERAÇÃO
-# ============================================================
+def gerar_arte(produto, caminho_saida):
 
-def gerar_arte(
-    produto,
-    caminho_saida=None,
-):
-    """
-    Gera uma arte individual 1080x1350.
-
-    Espera um dicionário contendo,
-    preferencialmente:
-
-        titulo
-        categoria
-        ranking
-        preco_antigo
-        preco_atual
-        desconto
-        imagem
-    """
-
-    if not produto:
-        raise ValueError(
-            "Produto não informado."
-        )
-
-    PASTA_SAIDA.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    ranking = produto.get(
-        "ranking",
-        1,
-    )
+    template = carregar_template()
 
     titulo = (
         produto.get("titulo")
         or produto.get("nome")
-        or "Oferta especial"
+        or "Produto em oferta"
     )
 
     categoria = (
         produto.get("categoria")
-        or "Oferta"
+        or ""
     )
 
-    preco_antigo = (
-        produto.get("preco_antigo")
-        or produto.get("preco_original")
-        or produto.get("preco")
-        or 0
-    )
-
-    preco_atual = (
-        produto.get("preco_atual")
-        or produto.get("preco")
-        or 0
-    )
-
-    desconto = (
-        produto.get("desconto")
-        or 0
-    )
-
-    imagem = (
+    imagem_origem = (
         produto.get("imagem")
         or produto.get("imagem_url")
         or produto.get("thumbnail")
+        or ""
     )
 
+    # =========================================================
+    # PREÇOS
+    # =========================================================
+
+    preco_antigo = converter_numero(
+        produto.get("preco_antigo")
+        or produto.get("preco_original")
+        or produto.get("preco"),
+        0,
+    )
+
+    preco_atual = converter_numero(
+        produto.get("preco_atual")
+        or produto.get("preco"),
+        0,
+    )
+
+    # =========================================================
+    # DESCONTO
+    # =========================================================
+
+    desconto = converter_numero(
+        produto.get("desconto")
+        or produto.get("desconto_instagram"),
+        0,
+    )
+
+    # Se não existir desconto calculado,
+    # calcula automaticamente pelo preço.
+
+    if desconto <= 0 and preco_antigo > 0 and preco_atual > 0:
+
+        desconto = (
+            (preco_antigo - preco_atual)
+            / preco_antigo
+        ) * 100
+
+    # Evita valores absurdos
+    if desconto < 0:
+        desconto = 0
+
+    # =========================================================
+    # RANKING
+    # =========================================================
+
+    ranking = produto.get("ranking") or 1
+
+    try:
+        ranking = int(ranking)
+    except (ValueError, TypeError):
+        ranking = 1
+
+    # =========================================================
+    # IMAGENS
+    # =========================================================
+
     imagem = preparar_imagem(
-        imagem
+        imagem_origem
     )
 
     logo = preparar_logo()
 
-    dados = {
-        "ranking": escapar(ranking),
-        "titulo": escapar(titulo),
-        "categoria": escapar(categoria),
-        "preco_antigo": formatar_preco(
-            preco_antigo
-        ),
-        "preco_atual": formatar_preco(
-            preco_atual
-        ),
-        "desconto": formatar_desconto(
-            desconto
-        ),
+    # =========================================================
+    # CONTEXTO DO TEMPLATE
+    # =========================================================
+
+    contexto = {
+        "titulo": str(titulo),
+        "categoria": str(categoria),
         "imagem": imagem,
         "logo": logo,
+        "ranking": ranking,
+        "preco_antigo": preco_antigo,
+        "preco_atual": preco_atual,
+        "desconto": desconto,
     }
 
-    template = carregar_template()
-
-    html_renderizado = template.render(
-        **dados
+    html = template.render(
+        **contexto
     )
 
-    if caminho_saida is None:
+    caminho_saida = Path(caminho_saida)
 
-        caminho_saida = (
-            PASTA_SAIDA
-            / f"arte_{ranking}.png"
-        )
-
-    caminho_saida = Path(
-        caminho_saida
-    )
-
-    return renderizar_html(
-        html_renderizado,
+    renderizar_html(
+        html,
         caminho_saida,
     )
 
+    return caminho_saida
 
-# ============================================================
-# TOP 5
-# ============================================================
 
 def gerar_artes_top(produtos):
-    """
-    Gera até 5 artes.
-
-    Retorna uma lista com os caminhos
-    das imagens geradas.
-    """
 
     if not produtos:
+
         print(
-            "⚠️ Nenhum produto recebido "
-            "para geração das artes."
+            "⚠️ Nenhum produto recebido."
         )
 
         return []
+
+    limpar_artes_anteriores()
 
     PASTA_SAIDA.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    artes = []
-
     print()
     print("=" * 60)
-    print("📸 GERANDO ARTES DO INSTAGRAM")
+    print("📸 GERANDO ARTES REAIS DO INSTAGRAM")
     print("=" * 60)
+
+    artes = []
 
     for posicao, produto in enumerate(
         produtos[:5],
         start=1,
     ):
 
+        titulo = (
+            produto.get("titulo")
+            or produto.get("nome")
+            or "Produto"
+        )
+
+        imagem = (
+            produto.get("imagem")
+            or produto.get("imagem_url")
+            or produto.get("thumbnail")
+            or ""
+        )
+
+        print()
+        print(
+            f"🛍️ Produto: {titulo}"
+        )
+
+        print(
+            f"🖼️ Imagem: {imagem}"
+        )
+
+        produto_arte = dict(produto)
+
+        produto_arte["ranking"] = posicao
+
+        caminho_saida = (
+            PASTA_SAIDA
+            / f"top_{posicao}.png"
+        )
+
         try:
 
-            produto = dict(produto)
-
-            produto["ranking"] = (
-                produto.get("ranking")
-                or posicao
+            caminho = gerar_arte(
+                produto_arte,
+                caminho_saida,
             )
 
-            caminho = gerar_arte(
-                produto
+            print(
+                f"✅ Arte {posicao} gerada: "
+                f"{caminho}"
             )
 
             artes.append(
                 caminho
             )
 
-            print(
-                f"✅ Arte "
-                f"{posicao}/5 criada: "
-                f"{caminho}"
-            )
-
         except Exception as erro:
 
             print(
-                f"❌ Erro ao gerar "
-                f"arte {posicao}/5: "
-                f"{erro}"
+                f"❌ Erro ao gerar arte "
+                f"{posicao}: {erro}"
             )
 
+    print()
     print(
         f"📸 Total de artes geradas: "
         f"{len(artes)}"
     )
 
+    print("=" * 60)
+
     return artes
 
 
-# ============================================================
-# LISTAGEM
-# ============================================================
-
 def listar_artes_do_dia():
-    """
-    Lista as artes disponíveis para
-    a página /instagram.
-    """
 
     if not PASTA_SAIDA.exists():
         return []
 
     arquivos = sorted(
         PASTA_SAIDA.glob("*.png"),
-        key=lambda arquivo:
-            arquivo.stat().st_mtime,
+        key=lambda arquivo: arquivo.stat().st_mtime,
         reverse=True,
     )
 
     artes = []
 
-    for posicao, arquivo in enumerate(
-        arquivos[:5],
-        start=1,
-    ):
+    for arquivo in arquivos[:5]:
+
+        nome = arquivo.stem
 
         try:
-
-            caminho_relativo = (
-                arquivo.relative_to(
-                    BASE_DIR
-                    / "static"
-                )
+            posicao = int(
+                nome.split("_")[-1]
             )
+        except (ValueError, IndexError):
+            posicao = 0
 
-            artes.append(
-                {
-                    "arquivo":
-                        caminho_relativo.as_posix(),
-
-                    "posicao":
-                        posicao,
-                }
-            )
-
-        except ValueError:
-
-            print(
-                "⚠️ Não foi possível "
-                "montar o caminho da arte: "
-                f"{arquivo}"
-            )
+        artes.append(
+            {
+                "arquivo": (
+                    "img/instagram/geradas/"
+                    + arquivo.name
+                ),
+                "posicao": posicao,
+            }
+        )
 
     return artes
