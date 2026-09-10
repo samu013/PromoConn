@@ -1,5 +1,4 @@
 from pathlib import Path
-from urllib.parse import urlparse
 import base64
 import mimetypes
 
@@ -76,9 +75,9 @@ def converter_numero(valor, padrao=0.0):
     elif "," in texto:
         texto = texto.replace(",", ".")
 
-    # Apenas ponto: 2498.50
     try:
         return float(texto)
+
     except (ValueError, TypeError):
         return padrao
 
@@ -142,6 +141,7 @@ def preparar_imagem(origem):
             )
 
         except Exception as erro:
+
             print(
                 f"⚠️ Não foi possível baixar imagem: {erro}"
             )
@@ -158,12 +158,15 @@ def preparar_imagem(origem):
         caminho = BASE_DIR / caminho
 
     if not caminho.exists():
+
         print(
             f"⚠️ Imagem local não encontrada: {caminho}"
         )
+
         return ""
 
     try:
+
         mime = mimetypes.guess_type(
             str(caminho)
         )[0] or "image/png"
@@ -177,9 +180,11 @@ def preparar_imagem(origem):
         )
 
     except Exception as erro:
+
         print(
             f"⚠️ Erro ao preparar imagem local: {erro}"
         )
+
         return ""
 
 
@@ -226,7 +231,7 @@ def preparar_logo():
 def limpar_artes_anteriores():
     """
     Remove as artes anteriores para evitar
-    que uma arte de teste apareça no lugar
+    que uma arte antiga apareça no lugar
     das artes novas.
     """
 
@@ -240,10 +245,12 @@ def limpar_artes_anteriores():
     for arquivo in PASTA_SAIDA.glob("*.png"):
 
         try:
+
             arquivo.unlink()
             removidas += 1
 
         except Exception as erro:
+
             print(
                 f"⚠️ Não foi possível remover "
                 f"{arquivo.name}: {erro}"
@@ -295,16 +302,26 @@ def gerar_arte(produto, caminho_saida):
     # PREÇOS
     # =========================================================
 
-    preco_antigo = converter_numero(
-        produto.get("preco_antigo")
-        or produto.get("preco_original")
+    # Preço atual
+    preco_atual = converter_numero(
+        produto.get("preco_atual")
         or produto.get("preco"),
         0,
     )
 
-    preco_atual = converter_numero(
-        produto.get("preco_atual")
-        or produto.get("preco"),
+    # Preço antigo
+    #
+    # IMPORTANTE:
+    # Não usamos mais o preço atual como fallback.
+    # Isso evita mostrar:
+    #
+    # ~~R$ 2.498,00~~
+    # R$ 2.498,00
+    #
+    # quando o produto não possui desconto.
+    preco_antigo = converter_numero(
+        produto.get("preco_antigo")
+        or produto.get("preco_original"),
         0,
     )
 
@@ -318,18 +335,37 @@ def gerar_arte(produto, caminho_saida):
         0,
     )
 
-    # Se não existir desconto calculado,
-    # calcula automaticamente pelo preço.
-
-    if desconto <= 0 and preco_antigo > 0 and preco_atual > 0:
+    # Só calcula desconto automaticamente quando
+    # realmente existe um preço antigo maior que o atual.
+    if (
+        desconto <= 0
+        and preco_antigo > preco_atual > 0
+    ):
 
         desconto = (
             (preco_antigo - preco_atual)
             / preco_antigo
         ) * 100
 
-    # Evita valores absurdos
+    # Evita valores negativos
     if desconto < 0:
+        desconto = 0
+
+    # =========================================================
+    # EXISTE DESCONTO REAL?
+    # =========================================================
+
+    tem_desconto = (
+        preco_atual > 0
+        and preco_antigo > preco_atual
+        and desconto > 0
+    )
+
+    # Se não existe desconto real,
+    # não enviamos preço antigo para o template.
+    if not tem_desconto:
+
+        preco_antigo = 0
         desconto = 0
 
     # =========================================================
@@ -339,8 +375,11 @@ def gerar_arte(produto, caminho_saida):
     ranking = produto.get("ranking") or 1
 
     try:
+
         ranking = int(ranking)
+
     except (ValueError, TypeError):
+
         ranking = 1
 
     # =========================================================
@@ -366,6 +405,7 @@ def gerar_arte(produto, caminho_saida):
         "preco_antigo": preco_antigo,
         "preco_atual": preco_atual,
         "desconto": desconto,
+        "tem_desconto": tem_desconto,
     }
 
     html = template.render(
@@ -494,10 +534,13 @@ def listar_artes_do_dia():
         nome = arquivo.stem
 
         try:
+
             posicao = int(
                 nome.split("_")[-1]
             )
+
         except (ValueError, IndexError):
+
             posicao = 0
 
         artes.append(

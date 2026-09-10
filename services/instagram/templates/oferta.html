@@ -465,6 +465,7 @@
 <div class="arte">
 
     <!-- DETALHES SUPERIORES -->
+
     <div class="linha-verde"></div>
     <div class="linha-ciano"></div>
 
@@ -472,17 +473,21 @@
     <div class="ponto ponto-2"></div>
     <div class="ponto ponto-3"></div>
 
+
     <!-- =========================================================
          LOGO ORIGINAL DA PROMOCONN
     ========================================================== -->
 
     <div class="logo-area">
+
         <img
             class="logo"
             src="{{ logo }}"
             alt="PromoConn"
         >
+
     </div>
+
 
     <!-- =========================================================
          PRODUTO
@@ -492,7 +497,9 @@
 
         <div class="produto-conteudo">
 
+
             <!-- FOTO DO PRODUTO -->
+
             <div class="imagem-produto-area">
 
                 <img
@@ -503,7 +510,9 @@
 
             </div>
 
+
             <!-- RANKING -->
+
             {% if ranking %}
 
             <div class="ranking">
@@ -512,7 +521,9 @@
 
             {% endif %}
 
+
             <!-- CATEGORIA -->
+
             {% if categoria %}
 
             <div class="categoria">
@@ -521,15 +532,26 @@
 
             {% endif %}
 
+
             <!-- TÍTULO -->
+
             <div class="titulo">
                 {{ titulo }}
             </div>
 
-            <!-- PREÇOS -->
+
+            <!-- =================================================
+                 PREÇOS
+            ================================================== -->
+
             <div class="precos">
 
-                {% if preco_antigo %}
+                <!--
+                    O preço antigo só aparece quando existe
+                    desconto real.
+                -->
+
+                {% if tem_desconto %}
 
                 <div class="preco-antigo">
                     R$ {{ "%.2f"|format(preco_antigo)|replace(".", ",") }}
@@ -537,14 +559,21 @@
 
                 {% endif %}
 
+
+                <!-- PREÇO ATUAL -->
+
                 <div class="preco-atual">
                     R$ {{ "%.2f"|format(preco_atual)|replace(".", ",") }}
                 </div>
 
             </div>
 
-            <!-- DESCONTO -->
-            {% if desconto and desconto > 0 %}
+
+            <!-- =================================================
+                 DESCONTO
+            ================================================== -->
+
+            {% if tem_desconto %}
 
             <div class="desconto-box">
 
@@ -560,9 +589,11 @@
 
             {% endif %}
 
+
         </div>
 
     </section>
+
 
     <!-- =========================================================
          RODAPÉ / CTA
@@ -589,6 +620,7 @@
         </div>
 
     </footer>
+
 
 </div>
 
