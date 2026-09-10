@@ -32,3 +32,5 @@ debug_mercadolivre.html
 .listar_grupos_telegram.py
 
 .static/instagram/geradas/
+
+static/img/instagram/geradas/*.png
