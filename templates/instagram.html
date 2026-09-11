@@ -5,20 +5,28 @@
 {% block content %}
 
 <div class="cabecalho-pagina">
+
     <div>
-        <h2>Instagram</h2>
+
+        <h2>
+            Instagram
+        </h2>
+
         <p>
-            Top promoções do dia {{ data_referencia }} e geração
-            automática das artes no padrão PromoConn.
+            Top promoções do dia {{ data_referencia }}
+            e geração automática das artes.
         </p>
+
     </div>
 
     <div class="instagram-topo-acoes">
+
         <a
             href="{{ url_for('pagina_instagram') }}"
             class="botao botao-secundario"
         >
             {{ icon("refresh") }}
+
             Recalcular top 5
         </a>
 
@@ -27,6 +35,7 @@
             action="{{ url_for('gerar_artes_instagram') }}"
             style="margin: 0;"
         >
+
             <input
                 type="hidden"
                 name="csrf_token"
@@ -36,487 +45,1010 @@
             <button
                 type="submit"
                 class="botao botao-primario"
-                {% if not produtos %}disabled{% endif %}
+                {% if not produtos %}
+                    disabled
+                {% endif %}
             >
                 Gerar artes
             </button>
+
         </form>
+
     </div>
+
 </div>
+
 
 {% if gerado %}
+
     <div class="instagram-alerta sucesso">
-        ✅ Artes geradas com sucesso.
+
+        ✅ Artes geradas e enviadas
+        para o Cloudinary com sucesso.
+
     </div>
+
 {% endif %}
+
 
 {% if erro_geracao %}
+
     <div class="instagram-alerta erro">
-        <strong>Não foi possível gerar as artes.</strong>
-        <span>{{ erro_geracao }}</span>
+
+        <strong>
+            Não foi possível gerar as artes.
+        </strong>
+
+        <span>
+            {{ erro_geracao }}
+        </span>
+
     </div>
+
 {% endif %}
 
+
+<!-- ===================================================== -->
+<!-- RESUMO -->
+<!-- ===================================================== -->
+
 <div class="instagram-resumo">
-    <div class="instagram-resumo-item">
-        <strong>{{ total_publicados_hoje }}</strong>
-        <span>Publicadas hoje</span>
-    </div>
 
     <div class="instagram-resumo-item">
-        <strong>{{ total_candidatos }}</strong>
-        <span>Candidatas válidas</span>
+
+        <strong>
+            {{ total_publicados_hoje }}
+        </strong>
+
+        <span>
+            Publicadas hoje
+        </span>
+
     </div>
 
+
     <div class="instagram-resumo-item">
-        <strong>{{ produtos|length }}</strong>
-        <span>Selecionadas</span>
+
+        <strong>
+            {{ total_candidatos }}
+        </strong>
+
+        <span>
+            Candidatas válidas
+        </span>
+
     </div>
+
+
+    <div class="instagram-resumo-item">
+
+        <strong>
+            {{ produtos|length }}
+        </strong>
+
+        <span>
+            Selecionadas
+        </span>
+
+    </div>
+
 </div>
 
+
+<!-- ===================================================== -->
+<!-- TOP PROMOÇÕES -->
+<!-- ===================================================== -->
+
 <div class="painel-card">
+
     <div class="painel-card-titulo">
-        <span>Top promoções do dia</span>
+
+        <span>
+            Top promoções do dia
+        </span>
 
         <span class="contador-badge">
             {{ produtos|length }}/5
         </span>
+
     </div>
 
+
     {% if produtos %}
+
         <div class="instagram-lista">
+
             {% for produto in produtos %}
+
                 <article class="instagram-produto">
+
                     <div class="instagram-posicao">
                         #{{ loop.index }}
                     </div>
 
+
                     <div class="instagram-imagem">
+
                         <img
                             src="{{ produto.imagem }}"
                             alt="{{ produto.nome }}"
                             loading="lazy"
                         >
+
                     </div>
+
 
                     <div class="instagram-info">
+
                         <div class="badges">
+
                             <span class="badge badge-score">
+
                                 {{ produto.categoria or 'Geral' }}
+
                             </span>
+
 
                             {% if produto.desconto_instagram > 0 %}
+
                                 <span class="badge badge-pronto">
-                                    {{ '%.0f'|format(produto.desconto_instagram) }}% OFF
+
+                                    {{
+                                        '%.0f'
+                                        |format(
+                                            produto.desconto_instagram
+                                        )
+                                    }}% OFF
+
                                 </span>
+
                             {% endif %}
+
                         </div>
 
-                        <h3>{{ produto.nome }}</h3>
+
+                        <h3>
+                            {{ produto.nome }}
+                        </h3>
+
 
                         <div class="instagram-precos">
+
                             {% if produto.preco_original %}
-                                <span class="instagram-preco-antigo">
-                                    R$ {{ '%.2f'|format(produto.preco_original)|replace('.', ',') }}
+
+                                <span
+                                    class="instagram-preco-antigo"
+                                >
+
+                                    R$
+                                    {{
+                                        '%.2f'
+                                        |format(
+                                            produto.preco_original
+                                        )
+                                        |replace(
+                                            '.',
+                                            ','
+                                        )
+                                    }}
+
                                 </span>
+
                             {% endif %}
+
 
                             <strong>
-                                R$ {{ '%.2f'|format(produto.preco)|replace('.', ',') }}
+
+                                R$
+                                {{
+                                    '%.2f'
+                                    |format(
+                                        produto.preco
+                                    )
+                                    |replace(
+                                        '.',
+                                        ','
+                                    )
+                                }}
+
                             </strong>
+
                         </div>
+
 
                         <div class="instagram-meta">
+
                             <span>
+
                                 Score Instagram:
-                                <strong>{{ '%.1f'|format(produto.score_instagram) }}</strong>
+
+                                <strong>
+
+                                    {{
+                                        '%.1f'
+                                        |format(
+                                            produto.score_instagram
+                                        )
+                                    }}
+
+                                </strong>
+
                             </span>
 
+
                             {% if produto.ranking is not none %}
+
                                 <span>
+
                                     Ranking ML:
-                                    <strong>#{{ produto.ranking }}</strong>
+
+                                    <strong>
+                                        #{{ produto.ranking }}
+                                    </strong>
+
                                 </span>
+
                             {% endif %}
+
                         </div>
+
                     </div>
 
+
                     <div class="instagram-acoes">
+
                         {% if produto.link_produto %}
+
                             <a
                                 href="{{ produto.link_produto }}"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 class="botao botao-secundario"
                             >
+
                                 {{ icon("external") }}
+
                                 Produto
+
                             </a>
+
                         {% endif %}
+
                     </div>
+
                 </article>
+
             {% endfor %}
+
         </div>
+
+
     {% else %}
+
         <div class="instagram-vazio">
-            <strong>Nenhuma promoção disponível hoje.</strong>
+
+            <strong>
+                Nenhuma promoção disponível hoje.
+            </strong>
+
             <p>
-                Para entrar no Top 5, a publicação precisa ter
+
+                Para entrar no Top 5,
+                a publicação precisa ter
                 imagem e preço válidos no histórico.
+
             </p>
+
         </div>
+
     {% endif %}
+
 </div>
 
+
+<!-- ===================================================== -->
+<!-- ARTES -->
+<!-- ===================================================== -->
+
 {% if artes %}
+
     <section class="instagram-artes">
+
         <div class="secao-titulo">
+
             <div>
-                <h3>Artes geradas</h3>
+
+                <h3>
+                    Artes geradas
+                </h3>
+
                 <span>
-                    {{ artes|length }} imagem(ns) em 1080 × 1350.
+
+                    {{ artes|length }}
+                    imagem(ns) em 1080 × 1350.
+
                 </span>
+
             </div>
+
         </div>
 
+
         <div class="instagram-artes-grid">
+
             {% for arte in artes %}
-                <article class="instagram-arte-card">
+
+                <article
+                    class="instagram-arte-card"
+                >
+
+                    <!-- ================================= -->
+                    <!-- URL DA ARTE                        -->
+                    <!-- ================================= -->
+
+                    {% if arte.url %}
+
+                        {% set url_arte = arte.url %}
+
+                    {% else %}
+
+                        {% set url_arte = url_for(
+                            'static',
+                            filename=arte.arquivo
+                        ) %}
+
+                    {% endif %}
+
+
                     <a
-                        href="{{ url_for('static', filename=arte.arquivo) }}"
+                        href="{{ url_arte }}"
                         target="_blank"
                         rel="noopener noreferrer"
                         class="instagram-arte-preview"
                     >
+
                         <img
-                            src="{{ url_for('static', filename=arte.arquivo) }}"
+                            src="{{ url_arte }}"
                             alt="Arte Instagram #{{ arte.posicao }}"
                             loading="lazy"
                         >
+
                     </a>
 
-                    <div class="instagram-arte-rodape">
+
+                    <div
+                        class="instagram-arte-rodape"
+                    >
+
                         <strong>
-                            Promoção #{{ arte.posicao }}
+
+                            Promoção
+                            #{{ arte.posicao }}
+
                         </strong>
 
-                        <div class="instagram-arte-acoes">
+
+                        {% if arte.cloudinary %}
+
+                            <span
+                                class="instagram-arte-status"
+                            >
+                                ☁️ Cloudinary
+                            </span>
+
+                        {% endif %}
+
+
+                        <div
+                            class="instagram-arte-acoes"
+                        >
+
                             <a
-                                href="{{ url_for('static', filename=arte.arquivo) }}"
+                                href="{{ url_arte }}"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 class="botao botao-secundario"
                             >
+
                                 Visualizar
+
                             </a>
 
+
                             <a
-                                href="{{ url_for('static', filename=arte.arquivo) }}"
+                                href="{{ url_arte }}"
                                 download
                                 class="botao botao-azul"
                             >
+
                                 Baixar
+
                             </a>
+
                         </div>
+
                     </div>
+
                 </article>
+
             {% endfor %}
+
         </div>
+
     </section>
+
+
 {% else %}
-    <div class="instagram-proxima-etapa">
-        <strong>Artes ainda não geradas</strong>
+
+    <div
+        class="instagram-proxima-etapa"
+    >
+
+        <strong>
+            Artes ainda não geradas
+        </strong>
+
         <p>
+
             Confira o Top do dia e clique em
             <strong>Gerar artes</strong>.
+
         </p>
+
     </div>
+
 {% endif %}
 
+
 <style>
+
     .instagram-topo-acoes {
+
         display: flex;
+
         flex-wrap: wrap;
+
         gap: 9px;
+
         justify-content: flex-end;
+
     }
+
 
     .instagram-alerta {
+
         display: flex;
+
         flex-wrap: wrap;
+
         gap: 8px;
+
         align-items: center;
+
         margin-bottom: 18px;
+
         padding: 13px 16px;
+
         border-radius: 10px;
+
         font-size: 13px;
+
     }
+
 
     .instagram-alerta.sucesso {
+
         border: 1px solid #bfe8ca;
+
         background: #effbf2;
+
         color: #137a35;
+
     }
+
 
     .instagram-alerta.erro {
+
         border: 1px solid #f1c0c0;
+
         background: #fff3f3;
+
         color: #a92b2b;
+
     }
+
 
     .instagram-resumo {
+
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(0, 1fr)
+            );
+
         gap: 16px;
+
         margin-bottom: 22px;
+
     }
+
 
     .instagram-resumo-item {
+
         padding: 18px 20px;
+
         background: white;
+
         border: 1px solid var(--borda);
+
         border-radius: 12px;
+
         box-shadow: var(--sombra);
+
     }
+
 
     .instagram-resumo-item strong {
+
         display: block;
+
         color: var(--azul-900);
+
         font-size: 30px;
+
         font-weight: 900;
+
     }
+
 
     .instagram-resumo-item span {
+
         display: block;
+
         margin-top: 3px;
+
         color: var(--texto-suave);
+
         font-size: 12px;
+
         font-weight: 800;
+
         text-transform: uppercase;
+
     }
+
 
     .instagram-lista {
+
         display: grid;
+
     }
+
 
     .instagram-produto {
+
         display: grid;
-        grid-template-columns: 58px 110px minmax(0, 1fr) 125px;
+
+        grid-template-columns:
+            58px
+            110px
+            minmax(0, 1fr)
+            125px;
+
         gap: 16px;
+
         align-items: center;
+
         padding: 18px;
-        border-bottom: 1px solid var(--borda);
+
+        border-bottom:
+            1px solid var(--borda);
+
     }
+
 
     .instagram-produto:last-child {
+
         border-bottom: none;
+
     }
+
 
     .instagram-posicao {
+
         width: 48px;
+
         height: 48px;
+
         display: flex;
+
         align-items: center;
+
         justify-content: center;
+
         border-radius: 50%;
+
         background: var(--azul-900);
+
         color: white;
+
         font-weight: 900;
+
         font-size: 16px;
+
     }
+
 
     .instagram-imagem {
+
         width: 105px;
+
         height: 105px;
+
         display: flex;
+
         align-items: center;
+
         justify-content: center;
+
         overflow: hidden;
+
         padding: 6px;
+
         background: white;
+
         border: 1px solid var(--borda);
+
         border-radius: 10px;
+
     }
+
 
     .instagram-imagem img {
+
         width: 100%;
+
         height: 100%;
+
         object-fit: contain;
+
     }
+
 
     .instagram-info h3 {
+
         margin: 0 0 10px;
+
         color: var(--texto);
+
         font-size: 15px;
+
         line-height: 1.45;
+
     }
+
 
     .instagram-precos {
+
         display: flex;
+
         align-items: baseline;
+
         flex-wrap: wrap;
+
         gap: 10px;
+
     }
+
 
     .instagram-precos strong {
+
         color: var(--verde-700);
+
         font-size: 22px;
+
         font-weight: 900;
+
     }
+
 
     .instagram-preco-antigo {
+
         color: var(--texto-suave);
+
         font-size: 12px;
+
         text-decoration: line-through;
+
     }
+
 
     .instagram-meta {
+
         display: flex;
+
         flex-wrap: wrap;
+
         gap: 8px 18px;
+
         margin-top: 9px;
+
         color: var(--texto-suave);
+
         font-size: 11px;
+
     }
+
 
     .instagram-acoes {
+
         display: flex;
+
         justify-content: flex-end;
+
     }
+
 
     .instagram-vazio {
+
         padding: 48px 24px;
+
         text-align: center;
+
         color: var(--texto-suave);
+
     }
+
 
     .instagram-vazio strong {
+
         color: var(--azul-900);
+
     }
+
 
     .instagram-proxima-etapa {
+
         margin-top: 18px;
+
         padding: 18px 20px;
+
         border: 1px solid #dce9ff;
+
         border-radius: 12px;
+
         background: #f4f8ff;
+
         color: var(--azul-900);
+
     }
+
 
     .instagram-proxima-etapa p {
+
         margin: 5px 0 0;
+
         color: var(--texto-suave);
+
     }
+
 
     .instagram-artes {
+
         margin-top: 26px;
+
     }
+
 
     .instagram-artes-grid {
+
         display: grid;
-        grid-template-columns: repeat(
-            auto-fill,
-            minmax(245px, 1fr)
-        );
+
+        grid-template-columns:
+            repeat(
+                auto-fill,
+                minmax(245px, 1fr)
+            );
+
         gap: 18px;
+
     }
+
 
     .instagram-arte-card {
+
         overflow: hidden;
+
         background: white;
+
         border: 1px solid var(--borda);
+
         border-radius: 12px;
+
         box-shadow: var(--sombra);
+
     }
+
 
     .instagram-arte-preview {
+
         display: block;
+
         aspect-ratio: 4 / 5;
+
         overflow: hidden;
+
         background: #eef3f8;
+
     }
+
 
     .instagram-arte-preview img {
+
         display: block;
+
         width: 100%;
+
         height: 100%;
+
         object-fit: cover;
+
     }
+
 
     .instagram-arte-rodape {
+
         padding: 13px;
+
     }
+
 
     .instagram-arte-rodape > strong {
+
         display: block;
-        margin-bottom: 10px;
+
+        margin-bottom: 8px;
+
         color: var(--azul-900);
+
     }
+
+
+    .instagram-arte-status {
+
+        display: block;
+
+        margin-bottom: 10px;
+
+        color: var(--texto-suave);
+
+        font-size: 11px;
+
+    }
+
 
     .instagram-arte-acoes {
+
         display: flex;
+
         gap: 7px;
+
     }
+
 
     .instagram-arte-acoes .botao {
+
         flex: 1;
+
     }
+
 
     button:disabled {
+
         cursor: not-allowed;
+
         opacity: 0.55;
+
         transform: none !important;
+
     }
+
 
     @media (max-width: 850px) {
+
         .instagram-resumo {
+
             grid-template-columns: 1fr;
+
         }
+
 
         .instagram-produto {
-            grid-template-columns: 48px 85px minmax(0, 1fr);
+
+            grid-template-columns:
+                48px
+                85px
+                minmax(0, 1fr);
+
         }
 
+
         .instagram-imagem {
+
             width: 80px;
+
             height: 80px;
+
         }
+
 
         .instagram-acoes {
+
             grid-column: 2 / -1;
+
             justify-content: flex-start;
+
         }
+
     }
 
+
     @media (max-width: 560px) {
+
         .cabecalho-pagina {
+
             flex-direction: column;
+
         }
+
 
         .instagram-topo-acoes {
+
             width: 100%;
+
             justify-content: flex-start;
+
         }
+
 
         .instagram-produto {
-            grid-template-columns: 42px minmax(0, 1fr);
+
+            grid-template-columns:
+                42px
+                minmax(0, 1fr);
+
         }
 
+
         .instagram-imagem {
+
             grid-column: 2;
+
             width: 110px;
+
             height: 110px;
+
         }
+
 
         .instagram-info,
         .instagram-acoes {
+
             grid-column: 2;
+
         }
 
+
         .instagram-artes-grid {
+
             grid-template-columns: 1fr;
+
         }
+
     }
+
 </style>
 
 {% endblock %}
