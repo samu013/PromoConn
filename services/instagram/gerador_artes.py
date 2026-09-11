@@ -579,7 +579,7 @@ def gerar_arte(
 
     # Mantém o renderizador que já existe
     # no projeto PromoConn.
-    from services.instagram.renderizador import (
+    from services.instagram.renderer import (
         renderizar_html,
     )
 
