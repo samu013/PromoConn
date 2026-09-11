@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
+
+    <title>PromoConn - Arte</title>
 
     <style>
         * {
@@ -14,615 +17,391 @@
         body {
             width: 1080px;
             height: 1350px;
+
+            margin: 0;
+            padding: 0;
+
             overflow: hidden;
-            font-family: Arial, Helvetica, sans-serif;
+
             background: #ffffff;
         }
 
-        body {
-            background: #ffffff;
-        }
+
+        /* =====================================================
+           ÁREA TOTAL DA ARTE
+           ===================================================== */
 
         .arte {
             position: relative;
+
             width: 1080px;
             height: 1350px;
 
-            background: #ffffff;
-
             overflow: hidden;
-            color: #07194a;
+
+            background: #ffffff;
         }
 
-        /* =========================================================
-           DETALHES DECORATIVOS
-        ========================================================= */
 
-        .linha-verde {
+        /* =====================================================
+           PLANO DE FUNDO
+           ===================================================== */
+
+        .plano-fundo {
             position: absolute;
 
             top: 0;
             left: 0;
 
-            width: 100%;
-            height: 10px;
+            width: 1080px;
+            height: 1350px;
 
-            background: #69d313;
-
-            z-index: 20;
-        }
-
-        .linha-ciano {
-            position: absolute;
-
-            top: 10px;
-            left: 0;
-
-            width: 100%;
-            height: 4px;
-
-            background: #00aeea;
-
-            z-index: 20;
-        }
-
-        /* =========================================================
-           LOGO
-        ========================================================= */
-
-        .logo-area {
-            position: absolute;
-
-            top: 10px;
-            left: 50%;
-
-            transform: translateX(-50%);
-
-            width: 720px;
-            height: 235px;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            background: #ffffff;
-
-            z-index: 10;
-        }
-
-        .logo {
             display: block;
 
-            width: 650px;
-            max-width: 650px;
+            object-fit: cover;
 
-            height: auto;
-
-            object-fit: contain;
+            z-index: 1;
         }
 
-        /* =========================================================
-           ÁREA PRINCIPAL DO PRODUTO
-        ========================================================= */
 
-        .produto-area {
+        /* =====================================================
+           ÁREA DA IMAGEM DO PRODUTO
+           ===================================================== */
+
+        .area-produto {
             position: absolute;
 
-            top: 195px;
-            left: 42px;
+            top: 385px;
+            left: 660px;
 
-            width: 996px;
-            height: 985px;
-
-            background: #ffffff;
-
-            border-radius: 42px;
-
-            border: 5px solid #69d313;
-
-            box-shadow:
-                0 0 0 8px rgba(105, 211, 19, 0.10);
-
-            z-index: 5;
-
-            overflow: hidden;
-        }
-
-        .produto-conteudo {
-            position: relative;
-
-            width: 100%;
-            height: 100%;
-        }
-
-        /* =========================================================
-           FOTO DO PRODUTO
-        ========================================================= */
-
-        .imagem-produto-area {
-            position: absolute;
-
-            top: 130px;
-            left: 70px;
-
-            width: 850px;
-            height: 455px;
+            width: 500px;
+            height: 300px;
 
             display: flex;
+
             align-items: center;
             justify-content: center;
 
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.15);
 
-            border-radius: 28px;
+            z-index: 2;
 
-            overflow: hidden;
+            overflow: visible;
         }
+
+
+        /* =====================================================
+           IMAGEM DO PRODUTO
+           ===================================================== */
 
         .imagem-produto {
             display: block;
 
-            max-width: 78%;
-            max-height: 82%;
-
-            width: auto;
-            height: auto;
+            width: 500px;
+            height: 300px;
 
             object-fit: contain;
 
-            background: #ffffff;
+            background: transparent;
         }
 
-        /* =========================================================
-           RANKING
-        ========================================================= */
 
-        .ranking {
+        /* =====================================================
+           DESCRIÇÃO DO PRODUTO
+           ===================================================== */
+
+        .descricao-produto {
             position: absolute;
 
-            top: 550px;
-            left: 42px;
+            top: 450px;
+            left: 80px;
 
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            width: 550px;
 
-            min-width: 180px;
-            height: 58px;
+            font-family: Arial, Helvetica, sans-serif;
 
-            padding: 0 25px;
+            font-size: 45px;
 
-            background: #69d313;
-            color: #ffffff;
-
-            border-radius: 30px;
-
-            font-size: 29px;
-            font-weight: 800;
-
-            z-index: 10;
-        }
-
-        .ranking::before {
-            content: "🔥";
-
-            margin-right: 9px;
-
-            font-size: 25px;
-        }
-
-        /* =========================================================
-           CATEGORIA
-        ========================================================= */
-
-        .categoria {
-            position: absolute;
-
-            top: 620px;
-            left: 42px;
-
-            color: #07194a;
-
-            font-size: 44px;
-            font-weight: 800;
-
-            line-height: 1.05;
-
-            max-width: 870px;
-        }
-
-        /* =========================================================
-           TÍTULO
-        ========================================================= */
-
-        .titulo {
-            position: absolute;
-
-            top: 715px;
-            left: 42px;
-
-            width: 865px;
-
-            color: #07194a;
-
-            font-size: 30px;
-            font-weight: 600;
+            font-weight: 900;
 
             line-height: 1.15;
+
+            color: #07194a;
+
+            text-align: left;
+
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+
+            overflow: hidden;
+
+            z-index: 3;
         }
 
-        /* =========================================================
-           PREÇOS
-        ========================================================= */
+        /* =====================================================
+        ÁREA DOS PREÇOS
+        ===================================================== */
 
-        .precos {
+        .area-precos {
             position: absolute;
 
-            left: 42px;
-            bottom: 40px;
+            top: 780px;
+            left: 240px;
+
+            z-index: 4;
         }
 
-        .preco-antigo {
-            color: #777777;
 
-            font-size: 32px;
-            font-weight: 600;
+        /* =====================================================
+        PREÇO ANTERIOR
+        ===================================================== */
+
+        .preco-anterior {
+            font-family: Arial, Helvetica, sans-serif;
+
+            font-size: 30px;
+
+            font-weight: 400;
+
+            color: #777777;
 
             text-decoration: line-through;
 
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
+
+
+        /* =====================================================
+        PREÇO ATUAL
+        ===================================================== */
 
         .preco-atual {
+            font-family: Arial, Helvetica, sans-serif;
+
+            font-size: 62px;
+
+            font-weight: 550;
+
+            line-height: 1;
+
             color: #07194a;
-
-            font-size: 66px;
-            font-weight: 900;
-
-            line-height: 0.95;
         }
 
-        /* =========================================================
-           DESCONTO
-        ========================================================= */
 
-        .desconto-box {
+        /* =====================================================
+           BADGE DE DESCONTO
+           ===================================================== */
+
+        .badge-desconto {
             position: absolute;
 
-            right: 38px;
-            bottom: 30px;
+            /*
+             * POSIÇÃO
+             */
 
-            width: 260px;
-            height: 150px;
+            top: 900px;
+            right: 70px;
+
+
+            /*
+             * TAMANHO
+             */
+
+            width: 220px;
+            height: 220px;
+
+
+            /*
+             * FORMATO
+             */
+
+            border-radius: 50%;
+
+
+            /*
+             * COR
+             */
 
             background: #69d313;
 
-            border-radius: 32px;
+            color: #07194a;
+
+
+            /*
+             * CENTRALIZA O CONTEÚDO
+             */
 
             display: flex;
+
             flex-direction: column;
+
             align-items: center;
             justify-content: center;
 
-            color: #07194a;
 
-            transform: rotate(-2deg);
+            /*
+             * BORDA
+             */
+
+            border: 8px solid #ffffff;
+
+            box-shadow:
+                0 0 0 6px #69d313;
+
+
+            /*
+             * LEVE INCLINAÇÃO
+             */
+
+            transform: rotate(-7deg);
+
+            z-index: 5;
         }
 
-        .desconto {
+
+        /* =====================================================
+           NÚMERO DO DESCONTO
+           ===================================================== */
+
+        .porcentagem {
+            font-family: Arial, Helvetica, sans-serif;
+
             font-size: 62px;
+
             font-weight: 900;
 
             line-height: 0.9;
         }
 
-        .desconto-texto {
-            margin-top: 8px;
 
-            font-size: 23px;
+        /* =====================================================
+           TEXTO "OFF"
+           ===================================================== */
+
+        .texto-desconto {
+            margin-top: 12px;
+
+            font-family: Arial, Helvetica, sans-serif;
+
+            font-size: 24px;
+
             font-weight: 900;
 
             text-transform: uppercase;
+
+            line-height: 1;
         }
 
-        /* =========================================================
-           RODAPÉ
-        ========================================================= */
 
-        .rodape {
+        /* =====================================================
+           DETALHE DO BADGE
+           ===================================================== */
+
+        .detalhe-badge {
             position: absolute;
 
-            left: 0;
-            bottom: 0;
-
-            width: 1080px;
-            height: 190px;
-
-            background: #07194a;
-
-            z-index: 30;
-
-            display: flex;
-            align-items: center;
-
-            padding: 20px 45px;
-
-            border-top: 8px solid #69d313;
-        }
-
-        .rodape-icone {
-            width: 100px;
-            height: 100px;
-
-            border: 5px solid #69d313;
-
-            border-radius: 50%;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            color: #69d313;
-
-            font-size: 54px;
-
-            flex-shrink: 0;
-        }
-
-        .rodape-texto {
-            margin-left: 28px;
-
-            width: 520px;
-
-            color: #ffffff;
-
-            font-size: 24px;
-            font-weight: 800;
-
-            line-height: 1.15;
-
-            text-transform: uppercase;
-        }
-
-        .rodape-texto strong {
-            display: block;
-
-            color: #69d313;
+            top: 18px;
+            right: 25px;
 
             font-size: 30px;
-
-            margin-top: 5px;
         }
 
-        .link-bio {
-            width: 245px;
-            height: 64px;
-
-            margin-left: auto;
-
-            background: #69d313;
-
-            border-radius: 34px;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            color: #07194a;
-
-            font-size: 24px;
-            font-weight: 900;
-
-            text-transform: uppercase;
-
-            white-space: nowrap;
-        }
-
-        .link-bio::before {
-            content: "🔗";
-
-            margin-right: 8px;
-
-            font-size: 23px;
-        }
-
-        /* =========================================================
-           PEQUENOS DETALHES
-        ========================================================= */
-
-        .ponto {
-            position: absolute;
-
-            width: 11px;
-            height: 11px;
-
-            border-radius: 50%;
-
-            background: #00aeea;
-
-            z-index: 25;
-        }
-
-        .ponto-1 {
-            top: 35px;
-            left: 35px;
-        }
-
-        .ponto-2 {
-            top: 35px;
-            right: 35px;
-        }
-
-        .ponto-3 {
-            bottom: 22px;
-            right: 140px;
-        }
     </style>
+
 </head>
+
 
 <body>
 
-<div class="arte">
-
-    <!-- DETALHES SUPERIORES -->
-
-    <div class="linha-verde"></div>
-    <div class="linha-ciano"></div>
-
-    <div class="ponto ponto-1"></div>
-    <div class="ponto ponto-2"></div>
-    <div class="ponto ponto-3"></div>
+    <div class="arte">
 
 
-    <!-- =========================================================
-         LOGO ORIGINAL DA PROMOCONN
-    ========================================================== -->
-
-    <div class="logo-area">
+        <!-- =================================================
+             PLANO DE FUNDO
+             ================================================= -->
 
         <img
-            class="logo"
-            src="{{ logo }}"
-            alt="PromoConn"
+            class="plano-fundo"
+            src="static/img/instagram/Post.png"
+            alt=""
         >
 
-    </div>
+
+        <!-- =================================================
+             IMAGEM DO PRODUTO
+             ================================================= -->
+
+        <div class="area-produto">
+
+            <img
+                class="imagem-produto"
+                src="{{ imagem }}"
+                alt=""
+            >
+
+        </div>
 
 
-    <!-- =========================================================
-         PRODUTO
-    ========================================================== -->
+        <!-- =================================================
+             DESCRIÇÃO DO PRODUTO
+             ================================================= -->
 
-    <section class="produto-area">
-
-        <div class="produto-conteudo">
-
-
-            <!-- FOTO DO PRODUTO -->
-
-            <div class="imagem-produto-area">
-
-                <img
-                    class="imagem-produto"
-                    src="{{ imagem }}"
-                    alt="{{ titulo }}"
-                >
-
-            </div>
+        <div class="descricao-produto">
+            {{ nome }}
+        </div>
 
 
-            <!-- RANKING -->
+        <!-- =================================================
+             PREÇOS
+             ================================================= -->
 
-            {% if ranking %}
+        <div class="area-precos">
 
-            <div class="ranking">
-                TOP {{ ranking }}
-            </div>
+            {% if preco_antigo and preco_antigo > preco_atual %}
 
-            {% endif %}
-
-
-            <!-- CATEGORIA -->
-
-            {% if categoria %}
-
-            <div class="categoria">
-                {{ categoria }}
-            </div>
-
-            {% endif %}
-
-
-            <!-- TÍTULO -->
-
-            <div class="titulo">
-                {{ titulo }}
-            </div>
-
-
-            <!-- =================================================
-                 PREÇOS
-            ================================================== -->
-
-            <div class="precos">
-
-                <!--
-                    O preço antigo só aparece quando existe
-                    desconto real.
-                -->
-
-                {% if tem_desconto %}
-
-                <div class="preco-antigo">
+                <div class="preco-anterior">
                     R$ {{ "%.2f"|format(preco_antigo)|replace(".", ",") }}
                 </div>
 
-                {% endif %}
-
-
-                <!-- PREÇO ATUAL -->
-
-                <div class="preco-atual">
-                    R$ {{ "%.2f"|format(preco_atual)|replace(".", ",") }}
-                </div>
-
-            </div>
-
-
-            <!-- =================================================
-                 DESCONTO
-            ================================================== -->
-
-            {% if tem_desconto %}
-
-            <div class="desconto-box">
-
-                <div class="desconto">
-                    {{ desconto|round|int }}%
-                </div>
-
-                <div class="desconto-texto">
-                    DE DESCONTO
-                </div>
-
-            </div>
-
             {% endif %}
 
 
-        </div>
-
-    </section>
-
-
-    <!-- =========================================================
-         RODAPÉ / CTA
-    ========================================================== -->
-
-    <footer class="rodape">
-
-        <div class="rodape-icone">
-            🔗
-        </div>
-
-        <div class="rodape-texto">
-
-            ENTRE NO GRUPO E RECEBA AS
-
-            <strong>
-                MELHORES PROMOÇÕES!
-            </strong>
+            <div class="preco-atual">
+                R$ {{ "%.2f"|format(preco_atual)|replace(".", ",") }}
+            </div>
 
         </div>
 
-        <div class="link-bio">
-            LINK NA BIO
-        </div>
 
-    </footer>
+        <!-- =================================================
+             DESCONTO
+             Só aparece se houver desconto.
+             ================================================= -->
+
+        {% if desconto and desconto > 0 %}
+
+            <div class="badge-desconto">
+
+                <div class="detalhe-badge">
+                    ✦
+                </div>
+
+                <div class="porcentagem">
+                    {{ desconto|round|int }}%
+                </div>
+
+                <div class="texto-desconto">
+                    OFF
+                </div>
+
+            </div>
+
+        {% endif %}
 
 
-</div>
+    </div>
 
 </body>
+
 </html>
